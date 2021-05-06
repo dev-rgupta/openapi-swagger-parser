@@ -1,4 +1,4 @@
-package com.example.demo;
+package com.openapi.app;
 
 import java.awt.Color;
 import java.io.File;
