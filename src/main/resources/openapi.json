@@ -1,0 +1,231 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "description": "Partner Capability Selection APIs v1",
+    "title": "Partner Capability Selection v1 entities",
+    "version": "v1beta",
+    "contact": {
+      "name": "Partner Core Domain Team",
+      "email": "tbd@expedia.com",
+      "url": "https://go/partner-domain"
+    },
+    "x-eg-lifecycle": "PLANNED",
+    "x-eg-tags": [
+      "partner",
+      "capability",
+      "domain",
+      "selection",
+      "register"
+    ]
+  },
+  "paths": {
+    "/v1/retrieve-product-catalog": {
+      "get": {
+        "summary": "Get the full product catalog tailored for the partner.",
+        "operationId": "retrieve-product-catalog",
+        "security": [
+          {
+            "partnerCapabilitySelectionAuth": [
+              "partner-capability-selection.retrieve-product-catalog.get"
+            ]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "partner_account_id",
+            "in": "query",
+            "description": "Unique id for the partner account",
+            "example": "a71198ab-a593-490a-b639-0377b3733c41",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RetrieveProductCatalogResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "DomainRegistrationRequest": {
+        "type": "object",
+        "required": [
+          "domainId",
+          "isOpenToPublic",
+          "partnerPersonas"
+        ],
+        "properties": {
+          "domainId": {
+            "type": "string",
+            "description": "Unique id for the domain",
+            "example": "475794b5-4701-4c38-86cb-ed55c474c992"
+          },
+          "isOpenToPublic": {
+            "type": "boolean",
+            "description": "Is the domain and all its capabilities open to public. If 'true', it will override whatever setting the individual capabilities have.",
+            "example": false,
+            "default": false
+          },
+          "partnerRequirement": {
+            "$ref": "#/components/schemas/PartnerRequirement"
+          },
+          "configuratons": {
+            "type": "array",
+            "description": "TODO: set of configuration schemas that all partners get by default when they select the domain.",
+            "items": {
+              "type": "string"
+            }
+          },
+          "capabilityRegistrationRequests": {
+            "type": "array",
+            "description": "Optionally register the capabilities while registering the domain",
+            "items": {
+              "$ref": "#/components/schemas/CapabilitiesRegistrationRequest"
+            }
+          }
+        }
+      },
+      "CapabilitiesRegistrationRequest": {
+        "type": "object",
+        "required": [
+          "domainId",
+          "isOpenToPublic"
+        ],
+        "properties": {
+          "domainId": {
+            "type": "string",
+            "description": "Unique id for the domain",
+            "example": "36005fb5-f2ce-44de-aa1a-cf222950df09"
+          },
+          "capabilities": {
+            "type": "array",
+            "items": {
+              "properties": {
+                "capabilityId": {
+                  "type": "string",
+                  "description": "Unique id for the capability",
+                  "example": "36005fb5-f2ce-44de-aa1a-cf222950df09"
+                },
+                "isOpenToPublic": {
+                  "type": "boolean",
+                  "description": "Is the capability open to public.",
+                  "example": false,
+                  "default": false
+                },
+                "configuratons": {
+                  "type": "array",
+                  "description": "TODO: set of configuration schemas that all partners get by default when selecting the capability.",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "PartnerRequirement": {
+        "type": "object",
+        "properties": {
+          "partnerPersonas": {
+            "type": "array",
+            "description": "List of partner personas the domain is available to.  TODO: provide URL to get the partner persona types. TODO: should partner personas tailor the capabilities too?",
+            "example": [
+              "supply",
+              "developer"
+            ],
+            "items": {
+              "type": "string"
+            }
+          },
+          "partnerTier": {
+            "type": "string",
+            "description": "TODO: define partner Tier"
+          },
+          "partnerStandingStatus": {
+            "type": "string",
+            "description": "TODO: define partner standing status"
+          }
+        }
+      },
+      "RetrieveProductCatalogResponse": {
+        "type": "object",
+        "required": [
+          "domains"
+        ],
+        "properties": {
+          "domains": {
+            "type": "array",
+            "description": "Retrieve the set of domains & capabilities.",
+            "items": {
+              "$ref": "#/components/schemas/Domain"
+            }
+          }
+        }
+      },
+      "Domain": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "capabilities": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Capability"
+            }
+          }
+        }
+      },
+      "Capability": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "isSelected": {
+            "type": "boolean",
+            "description": "Has the capability already been selected"
+          },
+          "selectionStatus": {
+            "type": "string",
+            "enum": [
+              "IN_PROGRESS",
+              "COMPLETED"
+            ]
+          },
+          "configurations": {
+            "type": "string",
+            "description": "TODO: set of configurations configured for the capability."
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "partnerCapabilitySelectionAuth": {
+        "type": "oauth2",
+        "flows": {
+          "clientCredentials": {
+            "tokenUrl": "/oauth/token?grant_type=client_credentials",
+            "scopes": {
+              "partner-capability-selection.register-domain.create": "Register a domain for capability selection",
+              "partner-capability-selection.register-capabilities.create": "Register a set of capabilities",
+              "partner-capability-selection.retrieve-product-catalog.get": "Retrieve the product catalog"
+            }
+          }
+        }
+      }
+    }
+  }
+}

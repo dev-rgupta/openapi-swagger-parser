@@ -1,0 +1,454 @@
+openapi: 3.0.0
+info:
+  description: Partner domain APIs v1
+  title: Partner v1 entities
+  version: 'v1beta'
+  contact:
+    name: "Partner Core Domain Team"
+    email: "tbd@expedia.com"
+    url: "https://go/partner-domain"
+  x-eg-lifecycle: "PLANNED"
+  x-eg-tags: ["partner"]
+paths:
+  '/v1/clients':
+    post: 
+      summary: "Create a client of the Partner domain"
+      operationId: "create-partner-client"
+      security:
+        - partnerAuth:
+            - partner.clients.create
+      requestBody:
+        content: 
+          'application/json':
+            schema:
+              type: object
+              required:
+                - name
+              properties:
+                name:
+                  type: string
+                partner_id:
+                  type: string
+                  description: "A partner itself can be a client of the Partner domain"
+            example:
+              name: AMEX
+      responses:
+        '201':
+          description: "created"
+          content:
+            'application/json':
+              schema:
+                $ref: "#/components/schemas/PartnerClient"
+  '/v1/clients/{id}/onboarding-workflow':
+    post: 
+      summary: "Create an onboarding workflow"
+      operationId: "create-onboarding-workflow"
+      security:
+        - partnerAuth:
+            - partner.clients-onboarding-workflow.create
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: "Unique identifier for the partner domain client"
+        schema:
+          type: string
+      requestBody:
+        content: 
+          'application/json':
+            schema:
+              type: object
+              required:
+                - name
+              properties:
+                name:
+                  type: string
+            example:
+              name: AMEX
+      responses:
+        '201':
+          description: "created"
+          content:
+            'application/json':
+              schema:
+                $ref: "#/components/schemas/PartnerClient"
+  '/v1/clients/{id}/creation-requirements':
+    post: 
+      summary: "Define the partner creation data requirements"
+      operationId: "create-creation-requirements"
+      security:
+        - partnerAuth:
+            - partner.clients-creation-requirements.create
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: "Unique identifier for the partner domain client"
+        schema:
+          type: string
+      requestBody:
+        content: 
+          'application/json':
+            schema:
+              type: object
+              required:
+                - name
+              properties:
+                name:
+                  type: string
+            example:
+              name: AMEX
+      responses:
+        '201':
+          description: "created"
+          content:
+            'application/json':
+              schema:
+                $ref: "#/components/schemas/PartnerClient"
+  '/v1/clients/{id}/notification-preferences':
+    post: 
+      summary: "Define the partner creation data requirements"
+      operationId: "create-notification-preferences"
+      security:
+        - partnerAuth:
+            - partner.clients-notification-preferences.create
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: "Unique identifier for the partner domain client"
+        schema:
+          type: string
+      requestBody:
+        content: 
+          'application/json':
+            schema:
+              type: object
+              required:
+                - name
+              properties:
+                name:
+                  type: string
+            example:
+              name: AMEX
+      responses:
+        '201':
+          description: "created"
+          content:
+            'application/json':
+              schema:
+                $ref: "#/components/schemas/PartnerClient"
+  '/v1/clients/{id}/config-schema':
+    post: 
+      summary: "Define the partner configuration schema"
+      operationId: "create-config-schema"
+      security:
+        - partnerAuth:
+            - partner.clients-config-schema.create
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: "Unique identifier for the partner domain client"
+        schema:
+          type: string
+      requestBody:
+        content: 
+          'application/json':
+            schema:
+              type: object
+              required:
+                - name
+              properties:
+                name:
+                  type: string
+            example:
+              name: AMEX
+      responses:
+        '201':
+          description: "created"
+          headers:
+            x-next:
+              description: A link to the next page of responses
+              schema:
+                type: string
+          content:
+            'application/json':
+              schema:
+                $ref: "#/components/schemas/PartnerClient"
+  '/v1/partners':
+    post:
+      summary: "Create a partner"
+      operationId: "create-partner"
+      security:
+        - partnerAuth:
+            - partner.partners.create
+      requestBody:
+        content: 
+          'application/json':
+            schema:
+              type: object
+              required:
+                - name
+                - clientId
+              properties:
+                name:
+                  type: string
+                  description: "Name of the partner to create."
+                parentId:
+                  type: string
+                  description: "Indicates the parent partner entity."
+                clientId:
+                  type: string
+                  description: "Indicates the partner client that this partner is created on behalf of."
+            example:
+              name: AMEX
+              clientId: bbb3b004-3723-406d-be4b-a03cd4bc8d8c
+      responses:
+        '201':
+          description: "created"
+          content:
+            'application/json':
+              schema:
+                $ref: "#/components/schemas/Partner"
+          
+    get:
+      summary: "Get all partners"
+      operationId: "get-partners"
+      security:
+        - partnerAuth:
+            - partner.partners.read
+      responses:
+        '200':
+          description: "successful operation"
+          content:
+            'application/json':
+              schema:
+                $ref: "#/components/schemas/Partners"
+  '/v1/partners/{id}/accounts':
+    post:
+      summary: "Create a partner account to organize access controls and configurations at a more granular level."
+      operationId: "create-partner-account"
+      security:
+        - partnerAuth:
+            - partner.partners-accounts.create
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: "Unique identifier for the partner"
+        schema:
+          type: string
+      requestBody:
+        content: 
+          'application/json':
+            schema:
+              type: object
+              required:
+                - name
+              properties:
+                name:
+                  type: string
+                parent_id:
+                  type: string
+            example:
+              name: Chase Freedom Test
+      responses:
+        '201':
+          description: "created"
+          content:
+            'application/json':
+              schema:
+                $ref: "#/components/schemas/PartnerAccount"
+    get:
+      summary: "Get all partner accounts for a partner."
+      operationId: "get-partner-accounts"
+      security:
+        - partnerAuth:
+            - partner.partners-accounts.read
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: "Unique identifier for the partner"
+        schema:
+          type: string
+      - name: include_children
+        in: query
+        description: "Also include accounts under all partner children of specified partner"
+        schema:
+          type: boolean
+      responses:
+        '200':
+          description: "OK"
+          content:
+            'application/json':
+              schema:
+                $ref: "#/components/schemas/PartnerAccounts"          
+  '/v1/partners/{partner_id}/accounts/{account_id}':
+    get:
+      summary: "Get a partner account for a partner."
+      operationId: "get-partner-account"
+      security:
+        - partnerAuth:
+            - partner.partners-accounts.read
+      parameters:
+      - name: partner_id
+        in: path
+        required: true
+        description: "Unique identifier for the partner"
+        schema:
+          type: string
+      - name: account_id
+        in: path
+        required: true
+        description: "Unique identifier for the partner account id"
+        schema:
+          type: string
+      responses:
+        '200':
+          description: "OK"
+          content:
+            'application/json':
+              schema:
+                $ref: "#/components/schemas/PartnerAccount"   
+  '/v1/partners/{partner_id}/accounts/{account_id}/capabilities':
+    get:
+      summary: "Get all capabilities that the partner account has signed up for."
+      operationId: "get-partner-account-capabilities"
+      security:
+        - partnerAuth:
+            - partner.partners-account-capabilities.read
+      parameters:
+      - name: partner_id
+        in: path
+        required: true
+        description: "Unique identifier for the partner"
+        schema:
+          type: string
+      - name: account_id
+        in: path
+        required: true
+        description: "Unique identifier for the partner account id"
+        schema:
+          type: string
+      responses:
+        '200':
+          description: "OK"
+          content:
+            'application/json':
+              schema:
+                $ref: "#/components/schemas/Capabilities"
+components:
+  schemas:
+    PartnerClient:
+      type: object
+      required:
+        - id
+      properties:
+        id:
+          type: string
+    Partner:
+      type: object
+      required:
+        - id
+        - name
+        - type
+      properties:
+        id:
+          description: "Partner uuid"
+          example: "5423694-018a-43ca-8879-295e4efa58b4"
+          type: string
+        name:
+          description: "Partner name"
+          example: "Chase"
+          type: string
+        type:
+          description: "Partner type"
+          example: "Organization"
+          type: string
+        legacyId:
+          description: "A legacy identifier for the Partner"
+          example: "1"
+          type: string
+        legacyIdType:
+          description: "Legacy identifier type for the Partner"
+          type: string
+          enum: ["tpid"]
+        parentPartnerId:
+          description: "Part of the Partner hierarchy. If null, it is the root Partner."
+          type: string
+        partnerAccounts:
+          type: array
+          items:
+            $ref: '#/components/schemas/PartnerAccount'
+    Partners:
+      type: array
+      items:
+        $ref: '#/components/schemas/Partner'
+    PartnerAccount:
+      type: object
+      required:
+        - id
+        - name 
+      properties:
+        id:
+          description: "Partner Account uuid"
+          example: "5423694-018a-43ca-z1fd-295e4efa58b4"
+          type: string
+        name:
+          description: "Name of the Partner Account. The default Partner Account is named 'default'."
+          example: "Test Account"
+          type: string
+        userAccounts: 
+          $ref: '#/components/schemas/UserAccounts'
+        capabilities:
+          $ref: '#/components/schemas/Capabilities'
+    PartnerAccounts:
+      type: array
+      items:
+        $ref: '#/components/schemas/PartnerAccount'
+    Capability:
+      type: object
+      required:
+        - id
+        - name
+      properties:
+        id:
+          description: "Capability uuid"
+        name:
+          description: "Name of the Capability"
+    Capabilities:
+      type: array
+      description: "Set of capabilities the Partner have signed up for"
+      items:
+        $ref: '#/components/schemas/Capability'
+    UserAccount:
+      type: object
+      required:
+        - id
+      properties:
+        id: 
+          type: string
+    UserAccounts:
+      type: array
+      items:
+        $ref: '#/components/schemas/UserAccount'
+
+  securitySchemes:
+    partnerAuth:
+      type: oauth2
+      flows:
+        clientCredentials:
+          tokenUrl: /oauth/token?grant_type=client_credentials
+          scopes:
+            partner.clients.create: Create a client of the Partner domain
+            partner.clients-onboarding-workflow.create: Create an onboarding workflow
+            partner.clients-creation-requirements.create: Define the partner creation data requirements
+            partner.clients-notification-preferences.create: Define the partner creation data requirements
+            partner.clients-config-schema.create: Define the partner configuration schema
+            partner.partners.create: Create a partner
+            partner.partners.read: Read all partners
+            partner.partners-accounts.create: Create a partner account to organize access controls and configurations at a more granular level
+            partner.partners-accounts.read: Read partner accounts for a partner
+            partner.partners-account-capabilities.read: Get all capabilities that the partner account has signed up for
