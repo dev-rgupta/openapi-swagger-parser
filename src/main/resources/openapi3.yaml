@@ -1,0 +1,771 @@
+openapi: 3.0.0
+info:
+  title: Checkout Domain Service
+  description: API to return dynamic information responsible to build the checkout UI and the ability to book in EG's APIFirst ecosystem.
+  version: 'v1beta'
+  x-eg-lifecycle: PLANNED
+  contact:
+    name: "eCommerce Checkout API Core Team"
+    email: "eCommCKOPolaris@expedia.com"
+paths:
+  /checkout/create:
+    post:
+      tags:
+        - checkout-create
+      summary: Create Checkout session to open up the checkout experience
+      description: Create Checkout session to open up the checkout experience
+      operationId: create
+      security:
+        - checkoutAuth:
+            - checkout.session.write
+      parameters:
+        - name: trace_id
+          in: header
+          description:
+            UUID for easier correlation of logs associated with servicing this specific request.
+          required: false
+          schema:
+            type: string
+            format: uuid
+        - name: client_id
+          in: header
+          description: identifier for apps hitting the Checkout API
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CheckoutCreateRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CheckoutCreateResponse'
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CheckoutCreateResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CheckoutCreateResponse'
+              example:
+                errors:
+                  - name: urn:expedia-platform-error-type:bad-request
+                    level: Error
+                    recommendation: None
+                    timeStamp: '2021-03-11T20:24:48.676Z'
+                    correlationId: "aa97b177-9383-4934-8543-0f91a7a02836"
+                    message: Bad Request
+                    description: SupplyOfferTokens can not be empty
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CheckoutCreateResponse'
+              example:
+                errors:
+                  - name: urn:expedia-platform-error-type:unauthorized
+                    level: Error
+                    recommendation: None
+                    timeStamp: '2021-03-11T20:24:48.676Z'
+                    correlationId: "aa97b177-9383-4934-8543-0f91a7a02836"
+                    message: Unauthorized
+                    description: Your client is not authorized to access CheckoutAPI
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CheckoutCreateResponse'
+              example:
+                errors:
+                  - name: urn:expedia-platform-error-type:forbidden
+                    level: Error
+                    recommendation: None
+                    timeStamp: '2021-03-11T20:24:48.676Z'
+                    correlationId: "aa97b177-9383-4934-8543-0f91a7a02836"
+                    message: Forbidden
+                    description: Your client is forbidden to access CheckoutAPI
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CheckoutCreateResponse'
+              example:
+                errors:
+                  - name: urn:expedia-platform-error-type:resource-not-found
+                    level: Error
+                    recommendation: None
+                    timeStamp: '2021-03-11T20:24:48.676Z'
+                    correlationId: "aa97b177-9383-4934-8543-0f91a7a02836"
+                    message: Resource Not Found
+                    description: Resource Not Found
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CheckoutCreateResponse'
+              example:
+                errors:
+                  - name: urn:expedia-platform-error-type:server-error
+                    level: Error
+                    recommendation: None
+                    timeStamp: '2021-03-11T20:24:48.676Z'
+                    correlationId: "aa97b177-9383-4934-8543-0f91a7a02836"
+                    message: Internal server error
+                    description: Container service has timed out.
+      deprecated: false
+  /checkout/book:
+    post:
+      tags:
+        - checkout-book
+      summary: Retrieve Checkout transaction state, confirmation page, the OrderIdentifierV2,
+        and a URL to retrieve the order information after creating the checkout experience
+      description: Return JSON blob representing transaction status and data model (page data being confirmation or error) after Checkout session is created
+      operationId: book
+      security:
+        - checkoutAuth:
+            - checkout.session.read
+            - checkout.session.write
+      parameters:
+        - name: trace_id
+          in: header
+          description:
+            UUID for easier correlation of logs associated with servicing this specific request.
+          required: false
+          schema:
+            type: string
+            format: uuid
+        - name: client_id
+          in: header
+          description: identifier for apps hitting the Checkout API
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CheckoutBookRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CheckoutBookResponse'
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CheckoutBookResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CheckoutBookResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CheckoutBookResponse'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CheckoutBookResponse'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CheckoutBookResponse'
+        '500':
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CheckoutBookResponse'
+
+  # As there are still unknown details around how we could send information within ContextInput and whether we could take some of them
+  # for free, for simplicity, we decided that we would keep this endpoint as a POST and the endpoint being checkout/session/retrieve for now.
+  # As more details coming in from our implementation, this endpoint can potentially be subject to change to a GET endpoint for better adherence to REST best practice.
+  /checkout/session/retrieve:
+    post:
+      tags:
+        - checkout-session-retrieve
+      summary: Return the data models and session information
+      description: Return the data models and session information. The data models can be used to build out the checkout page and/or get the checkout status.
+      operationId: session
+      security:
+        - checkoutAuth:
+            - checkout.session.read
+      parameters:
+        - name: trace_id
+          in: header
+          description: UUID for easier correlation of logs associated with servicing this specific request.
+          required: false
+          schema:
+            type: string
+            format: uuid
+        - name: client_id
+          in: header
+          description: identifier for apps hitting the Checkout API.
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CheckoutSessionRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CheckoutSessionResponse'
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CheckoutSessionResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CheckoutSessionResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CheckoutSessionResponse'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CheckoutSessionResponse'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CheckoutSessionResponse'
+        '500':
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CheckoutSessionResponse'
+components:
+  securitySchemes:
+    checkoutAuth:
+      type: oauth2
+      flows:
+        clientCredentials:
+          tokenUrl: /oauth/token?grant_type=checkout_client_credentials
+          scopes:
+            checkout.session.read: Get checkout session state
+            checkout.session.write: Write checkout session state
+  schemas:
+    CheckoutCreateRequest:
+      type: object
+      description: Checkout create request
+      required:
+        - supplyOfferTokens
+        - contextInput
+      properties:
+        supplyOfferTokens:
+          type: array
+          items:
+            $ref: '#/components/schemas/SupplyOfferToken'
+        #ContextInput based off of https://github.expedia.biz/eg-business-domains/eg-business-domains-protos/blob/master/expediagroup/context/v1/context.proto
+        contextInput:
+          $ref: '#/components/schemas/Context'
+
+
+    CheckoutBookRequest:
+      type: object
+      description: Request object to initiate the checkout/book call
+      required:
+        - checkoutSessionToken
+        - checkoutSessionId
+        - contextInput
+        - bookingData
+      properties:
+        checkoutSessionToken:
+          type: string
+          description: A signature/token generated for each checkout session that ensures our checkout session is not hijacked and the clients are in the latest session state when doing a /book.
+        checkoutSessionId:
+          type: string
+          description: Identifier for a checkout session and can be used to retrieve the state of a checkout.
+        #ContextInput based off of https://github.expedia.biz/eg-business-domains/eg-business-domains-protos/blob/master/expediagroup/context/v1/context.proto
+        contextInput:
+          $ref: '#/components/schemas/Context'
+
+        bookingData:
+          $ref: '#/components/schemas/BookingData'
+
+    BookingData:
+      type: object
+      description: Data blob that EGP returns that will be stored in staging order
+      properties:
+        userInput:
+          type: array
+          items:
+            $ref: '#/components/schemas/UserEntry'
+        paymentData:
+          type: object
+          description: JSON blob returned by EGP
+        fraudDetectionData:
+          type: string
+          description: Input of fraud detection data
+
+    CheckoutCreateResponse:
+      type: object
+      properties:
+        checkoutSessionToken:
+          type: string
+          description: A signature/token generated for each checkout session that ensures our checkout session is not hijacked and the clients are in the latest session state when doing a /book.
+        checkoutSessionId:
+          type: string
+          description: identifier for a checkout session and can be used to retrieve the state of a checkout.
+        products:
+          type: array
+          description: list of all products associated with a checkout session id
+          items:
+            $ref: '#/components/schemas/Product'
+        prices:
+          type: array
+          description: aggregated price of all products
+          items:
+            $ref: "#/components/schemas/Price"
+        paymentAttributes:
+          $ref: '#/components/schemas/PaymentAttributes'
+
+        errors:
+          $ref: '#/components/schemas/ErrorCollection'
+
+    CheckoutSessionRequest:
+      type: object
+      description: Checkout session request object.
+      required:
+        - contextInput
+      properties:
+        #ContextInput based off of https://github.expedia.biz/eg-business-domains/eg-business-domains-protos/blob/master/expediagroup/context/v1/context.proto
+        contextInput:
+          $ref: '#/components/schemas/Context'
+
+        checkoutSessionId:
+          type: string
+          description: Identifier for a checkout session and can be used to retrieve the state of a checkout.
+
+    CheckoutSessionResponse:
+      type: object
+      description: Response object to encompass the response after checkout/session call
+      properties:
+        checkoutSessionToken:
+          type: string
+          description: A signature/token generated for each checkout session that ensures our checkout session is not hijacked and the clients are in the latest session state when doing a /book.
+        checkoutSessionId:
+          type: string
+          description: Identifier for a checkout session and can be used to retrieve the state of a checkout.
+        orderServiceUrl:
+          type: string
+          description: orderServiceUrl is returned when StagingOrder has been booked or after a successful booking, however, this is only available for the 24 hour lifespan of the sessionId
+        status:
+          $ref: '#/components/schemas/CheckoutBookStatus'
+        products:
+          type: array
+          description: list of all products associated with a checkout session id
+          items:
+            $ref: '#/components/schemas/Product'
+        paymentAttributes:
+          $ref: '#/components/schemas/PaymentAttributes'
+        prices:
+          type: array
+          description: aggregated price of all products
+          items:
+            $ref: "#/components/schemas/Price"
+        priceChange:
+          type: array
+          description: aggregated list of new and old prices before and after the change
+          items:
+            $ref: "#/components/schemas/PriceChange"
+        errors:
+          $ref: '#/components/schemas/ErrorCollection'
+
+    PriceChange:
+      type: object
+      description: A container for all price change information
+      properties:
+        oldPrice:
+          type: string
+        newPrice:
+          type: string
+        type:
+          type: string
+
+    CheckoutBookResponse:
+      type: object
+      description: Response object to encompass the response after checkout/book call
+      properties:
+        orderIdentifierV2:
+          type: string
+          description: order identifier number
+        orderServiceUrl:
+          type: string
+          description: url for order service
+        status:
+          type: string
+          description: status from checkout/book call response, containing both success and errors
+          items:
+            $ref: '#/components/schemas/CheckoutBookStatus'
+        confirmationPageData:
+          type: object
+          items:
+            $ref: '#/components/schemas/ConfirmationPageData'
+        errors:
+          $ref: '#/components/schemas/ErrorCollection'
+
+    ConfirmationPageData:
+      type: object
+      # items:
+      #   $ref: 'TBD'
+
+    ErrorCollection:
+      type: array
+      items:
+        $ref: '#/components/schemas/Error'
+
+    Error:
+      required:
+        - correlationId
+        - level
+        - message
+        - name
+        - recommendation
+        - timeStamp
+      type: object
+      properties:
+        name:
+          type: string
+          format: urn
+          example: urn:expedia-platform-error-type:resource-not-found
+        level:
+          type: string
+          enum:
+            - Error
+            - Warning
+        recommendation:
+          type: string
+          enum:
+            - Retry
+            - None
+        timeStamp:
+          type: string
+          format: date-time
+        correlationId:
+          type: string
+          format: uuid
+          example: aa97b177-9383-4934-8543-0f91a7a02836
+        message:
+          maxLength: 255
+          minLength: 1
+          type: string
+          example: Something bad happened here.
+        description:
+          maxLength: 2048
+          minLength: 0
+          type: string
+          example: A very detailed description of the error and instructions on what to do about it.
+        documentationLink:
+          type: string
+          format: uri
+          example: https://docs.api.expedia.com/errors/urn:expedia-platform-error-type:resource-not-found/en-us/details.html
+        offendingInputs:
+          type: array
+          items:
+            $ref: '#/components/schemas/ErrorOffendingInput'
+        additionalPropertyBags:
+          type: array
+          items:
+            $ref: '#/components/schemas/ErrorPropertyBag'
+
+    ErrorOffendingInput:
+      required:
+        - name
+        - value
+        - source
+      type: object
+      properties:
+        name:
+          type: string
+          example: "language"
+        value:
+          type: string
+          example: "ex-us"
+        source:
+          type: string
+          enum:
+            - Query
+            - Body
+
+    ErrorPropertyBag:
+      type: object
+      additionalProperties:
+        type: string
+        example: some value
+
+    CheckoutBookStatus:
+      type: string
+      enum:
+        - BOOKED
+        - UNBOOKED
+
+    SupplyOfferToken:
+      type: string
+      description: A token generated by the supply service to represent their product
+
+    PaymentAttributes:
+      type: object
+      description: payment attributes information associated with a checkout session id
+      properties:
+        paymentSessionId:
+          type: string
+        secret:
+          type: string
+
+    Price:
+      type: object
+      description: A container for all pricing information
+      properties:
+        type:
+          type: string
+        description:
+          type: string
+        displayAmount:
+          type: number
+          format: double
+        displayCurrency:
+          type: string
+        quotedAmount:
+          type: number
+          format: double
+        quotedCurrency:
+          type: string
+
+    Product:
+      type: object
+      description: A container for all information related to a product
+      properties:
+        id:
+          type: string
+          description: id to reference a specific product. For example, itemOfferId to reference the specific ItemOffer.
+        bookingfields:
+          type: array
+          items:
+            $ref: '#/components/schemas/BookingField'
+        prices:
+          type: array
+          items:
+            $ref: "#/components/schemas/Price"
+        termsAndConditions:
+          type: array
+          items:
+            $ref: "#/components/schemas/TermsAndCondition"
+
+    BookingField:
+      type: object
+      description: A container for all information that supply needs/takes to complete a booking
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        mandatory:
+          type: boolean
+          default: false
+        predefinedValues:
+          type: array
+          items:
+            properties:
+              value:
+                type: string
+        valdationRules:
+          type: array
+          items:
+            $ref: '#/components/schemas/ValidationRule'
+
+    UserEntry:
+      type: object
+      items:
+        properties:
+          name:
+            type: string
+          value:
+            type: string
+
+    TermsAndCondition:
+      type: object
+      description: A container for all term and condition of a product
+      properties:
+        text:
+          type: string
+        identifier:
+          type: string
+
+    ValidationRule:
+      type: string
+      description: validation rule associated with a product.
+
+    # Todo: Once official Context component definition is ready, will remove the Context component block below and its references.
+    Context:
+      description: Contextual information about the client/user and the site/application invoking a service endpoint. VERY IMPORTANT!! This context is pretty much locked down! This does not mean it cannot change but changes to it affect a wide range of messages and service. Unless a change is really needed to expose a platform capability
+      properties:
+        currency:
+          description: ISO currency code, e.g. "USD".
+          type: string
+        deviceContext:
+          $ref: '#/components/schemas/DeviceContext'
+        experiments:
+          description: Pre-evaluated experiments that can be passed down from clients to be consumed in various downstream services and extensions.
+          items:
+            $ref: '#/components/schemas/Experiment'
+          type: array
+        locale:
+          description: IETF BCP 47 language tag, e.g. "en-US".
+          type: string
+        loggingEnabled:
+          description: Indicates that the client wishes request and response blobs logged to haystack
+          type: boolean
+        pointOfSaleContext:
+          $ref: '#/components/schemas/PointOfSaleContext'
+        user:
+          $ref: '#/components/schemas/UserContext'
+      type: object
+
+    DeviceContext:
+      properties:
+        crossDomainId:
+          description: Identifies a client across multiple points of sale for a browser
+          type: string
+        deviceType:
+          description: The deice type used by the user
+          enum:
+            - DEVICE_TYPE_INVALID
+            - DEVICE_TYPE_DESKTOP
+            - DEVICE_TYPE_MOBILE_PHONE
+            - DEVICE_TYPE_MOBILE_TABLET
+            - DEVICE_TYPE_APP_PHONE
+            - DEVICE_TYPE_APP_TABLET
+          type: string
+        deviceUserAgentId:
+          description: Anonymous device ID, e.g. DUAID (GUID)
+          type: string
+        ip:
+          description: The IP address of the user, typically from "X-Forwarded-For" HTTP header.
+          type: string
+        userAgent:
+          description: The application type, operating system, software vendor or software version of the originating request.
+          type: string
+      type: object
+
+    Experiment:
+      description: Represents an experiment evaluation, agnostic of a brand's experimentation framework.
+      properties:
+        bucket:
+          description: The evaluated bucket, or treatment of the experiment.
+          format: int32
+          type: integer
+        id:
+          description: Numeric ID, if one exists in the experimentation framework.
+          format: int32
+          type: integer
+        name:
+          description: Experiment name, if one exists in the experimentation framework.
+          type: string
+      type: object
+
+    LegacyPointOfSale:
+      description: Represents the Legacy Point Of Sale identifiers
+      properties:
+        eapId:
+          description: Expedia Affiliate Partner ID.
+          format: int32
+          type: integer
+        tpId:
+          description: Travel Product ID, legacy ID that identifies a point of sale.
+          format: int32
+          type: integer
+      type: object
+
+    PointOfSale:
+      description: Represents the PointOfSale information
+      properties:
+        companyCode:
+          format: int32
+          type: integer
+        jurisdictionCode:
+          description: ISO country code of the point of sale.
+          type: string
+        managementUnitCode:
+          format: int32
+          type: integer
+      type: object
+
+    PointOfSaleContext:
+      description: Contextual elements describing the site/point of sale.
+      properties:
+        divisionPosKey:
+          description: Brand specific point of sale identifier. For use by division level clients and corresponding extensions. Never evaluated or used within a core service.
+          properties:
+            fields:
+              additionalProperties: true
+              type: object
+        legacyPointOfSale:
+          $ref: '#/components/schemas/LegacyPointOfSale'
+        pointOfSale:
+          $ref: '#/components/schemas/PointOfSale'
+        pointOfSaleId:
+          description: 'New point of sale identifier for all brands. See: http://docweb.exp-tools.net/expsite/sites'
+          type: string
+      type: object
+
+    UserContext:
+      description: User and device specific information.
+      properties:
+        customerJurisdictionCode:
+          description: Jurisdiction (Country) User is coming from
+          type: string
+        secondaryUserId:
+          description: Secondary user identifier - used for brand specific functions, such as loyalty.
+          type: string
+        userId:
+          description: Primary user identifier - usually TUID for most brands.
+          type: string
+      type: object
