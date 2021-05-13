@@ -13,8 +13,13 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.openapi.pact.errors.ErrorResources;
 import com.openapi.pact.gen.PactGenerationException;
 import com.openapi.pact.model.Interaction;
 import com.openapi.pact.model.InteractionRequest;
@@ -43,6 +48,8 @@ import uk.co.jemos.podam.api.PodamFactoryImpl;
 public class PactFactory {
 
 	private static final PodamFactory podamFactory;
+	@Autowired
+	private static HttpStatus httpStatus;
 	Map<String, Object> map = new LinkedHashMap<>();
 	static {
 		podamFactory = new PodamFactoryImpl();
@@ -54,6 +61,7 @@ public class PactFactory {
 
 	public Pact createPacts(OpenAPI oapi, String consumerName) {
 		ObjectMapper objectMapper = new ObjectMapper();
+		objectMapper.configure(SerializationFeature.INDENT_OUTPUT, true);
 		return Pact.builder().provider(new Service("test-provider")) // configure
 				.consumer(new Service(consumerName)) // configure
 				.interactions(createInteractionsFromMethods(oapi, objectMapper, null))
@@ -61,37 +69,53 @@ public class PactFactory {
 				.build();
 	}
 
-	private static List<Interaction> createInteractionsFromMethods(OpenAPI oapi, ObjectMapper objectMapper,
+	private  List<Interaction> createInteractionsFromMethods(OpenAPI oapi, ObjectMapper objectMapper,
 			String pathPrefix) {
-		List<Interaction> interactionList = new ArrayList<>();
+		List<Interaction> interactionResults = new ArrayList<>();
 		Paths paths = oapi.getPaths();
 		for (Map.Entry<String, PathItem> pathItem : paths.entrySet()) {
 			for (Map<String, Operation> opsMap : getListRequestOperations(pathItem.getValue())) {
 				Iterator<Entry<String, Operation>> ops = opsMap.entrySet().iterator();
 				while (ops.hasNext()) {
+					List<Interaction> interactionList = new ArrayList<>();
 					Entry<String, Operation> entry = ops.next();
-					Interaction intraction = Interaction.builder()
-							.description(entry.getValue().getSummary())
-							.request(createInteractionRequest(entry, pathItem.getKey(), objectMapper))
-							.response(createInteractionResponse(entry.getValue(), objectMapper))
-							.build();
-
-					interactionList.add(intraction);
+					interactionList =	getInteractionsForEveryResponseCode(entry,pathItem.getKey(),objectMapper);
+					interactionResults.addAll(interactionList);
 				}
 			}
 		}
-		return interactionList;
+		return interactionResults;
 	}
 
-	private static InteractionRequest createInteractionRequest(Entry<String, Operation> entry, String path,
+	private  List<Interaction> getInteractionsForEveryResponseCode(Entry<String, Operation> entry, String path,
 			ObjectMapper objectMapper) {
-		return InteractionRequest.builder()
-				.method(entry.getKey())
+		
+		List<Interaction> interactionList = new LinkedList<>();
+		InteractionRequest interactionRequest = InteractionRequest.builder().method(entry.getKey())
 				.path(requestPathParamGenerator(entry.getValue(), objectMapper, path))
-				.headers(requestHeaderParamGenerator(entry.getValue(),objectMapper))
+				.headers(requestHeaderParamGenerator(entry.getValue(), objectMapper))
 				.query(requestQueryParamGenerator(entry.getValue(), objectMapper))
-				.body(requestBodyGenerator(entry.getValue(), objectMapper))
-				.build();
+				.body(requestBodyGenerator(entry.getValue(), objectMapper)).build();
+		
+		Iterator<Entry<String, ApiResponse>> apiResponseEntryItr = entry.getValue().getResponses().entrySet()
+				.iterator();
+		
+		while (apiResponseEntryItr.hasNext()) {
+			Entry<String, ApiResponse> apiResponseEntry = apiResponseEntryItr.next();
+			InteractionResponse interactionResponse = InteractionResponse.builder().status(apiResponseEntry.getKey())
+					.headers(responseHeaderParamGenerator(apiResponseEntry.getValue().getHeaders()))
+					.body(responseBodyGenerator(apiResponseEntry, objectMapper)).build();
+			
+			Interaction intraction = Interaction.builder()
+					.description(entry.getValue().getSummary())
+					.request(interactionRequest)
+					.response(interactionResponse)
+					.build();
+			
+			interactionList.add(intraction);
+
+		}
+		return interactionList;
 	}
 
 	private static String requestQueryParamGenerator(Operation operation, ObjectMapper objectMapper) {
@@ -158,27 +182,6 @@ public class PactFactory {
 		return path;
 	}
 
-	private static Class<?> getClassType(String str) {
-		if ("boolean".equalsIgnoreCase(str)) {
-			return Boolean.class;
-		}
-		if ("string".equalsIgnoreCase(str)) {
-			return String.class;
-		}else {
-			return String.class;
-		}
-	}
-	private static InteractionResponse createInteractionResponse(Operation operation, ObjectMapper objectMapper) {
-		Entry<String, ApiResponse> apiResponseEntry = operation.getResponses().entrySet().stream().findFirst().get();
-		ApiResponse apiResponse = apiResponseEntry.getValue();
-
-		return InteractionResponse.builder()
-				.status(apiResponseEntry.getKey())
-				.headers(responseHeaderParamGenerator(apiResponse.getHeaders()))
-				.body(responseBodyGenerator(apiResponse, objectMapper))
-				.build();
-	}
-
 	@SuppressWarnings("unchecked")
 	private static JsonNode requestBodyGenerator(Operation operation, ObjectMapper objectMapper) {
 		List<Param> resultList = new LinkedList<>();
@@ -196,8 +199,9 @@ public class PactFactory {
 					resultList = extractedParamList(resultList, itr);
 					}
 			}
+			//objectMapper.configure(SerializationFeature.INDENT_OUTPUT, true);
 			String jsonString = objectMapper.writeValueAsString(parseParametersToBody(resultList));
-			log.info("::::::::Request Body String :::"+jsonString);	
+		//	log.info("::::::::Request Body String :::"+jsonString);	
 			JsonNode  jsonNode = objectMapper.readTree(jsonString);
 			log.info("::::::::Request Body JSON :::"+jsonNode);
 			return jsonNode;
@@ -208,35 +212,50 @@ public class PactFactory {
 	}
 	
 	@SuppressWarnings("unchecked")
-	private static JsonNode responseBodyGenerator(ApiResponse apiResponse, ObjectMapper objectMapper) {
+	private  JsonNode responseBodyGenerator(Entry<String, ApiResponse> apiResponseEntry, ObjectMapper objectMapper) {
 		List<Param> resultList = new ArrayList<>();
-		if (apiResponse.getContent() == null) {
+		if (apiResponseEntry.getValue().getContent() == null) {
 			return null;
 		}
-		Iterator<Entry<String, MediaType>> contentEntryIterator = apiResponse.getContent().entrySet().iterator();
+		Iterator<Entry<String, MediaType>> contentEntryIterator = apiResponseEntry.getValue().getContent().entrySet().iterator();
 		try {
+			Map<String, Object> map =null;
+			String jsonString=null;
+			ErrorResources errors = new ErrorResources();
 			while (contentEntryIterator.hasNext()) {
-				Schema schema = contentEntryIterator.next().getValue().getSchema();
+				Entry<String, MediaType> entryMediaType = contentEntryIterator.next();
+				Schema schema = entryMediaType.getValue().getSchema();
 				if (Objects.nonNull(schema.getProperties())) {
-				Iterator<Map.Entry<String, Schema>> itr = schema.getProperties().entrySet().iterator();
-				while (itr.hasNext()) {	
-					resultList = extractedParamList(resultList, itr);
+					Iterator<Map.Entry<String, Schema>> itr = schema.getProperties().entrySet().iterator();
+					while (itr.hasNext()) {
+						resultList = extractedParamList(resultList, itr);
 					}
-			}else{
-				ArraySchema arrayModel = (ArraySchema) schema;
-				Schema<?> schema1 = arrayModel.getItems();
-				if (schema1.getProperties() != null) {
-					Iterator<Map.Entry<String, Schema>> arrayProp = schema1.getProperties().entrySet().iterator();
-					while (arrayProp.hasNext()) {
-						resultList = extractedParamList(resultList, arrayProp);
+				} else {
+					ArraySchema arrayModel = (ArraySchema) schema;
+					Schema<?> schema1 = arrayModel.getItems();
+					if (schema1.getProperties() != null) {
+						Iterator<Map.Entry<String, Schema>> arrayProp = schema1.getProperties().entrySet().iterator();
+						while (arrayProp.hasNext()) {
+							resultList = extractedParamList(resultList, arrayProp);
+						}
 					}
 				}
+				if (HttpStatus.valueOf(Integer.parseInt(apiResponseEntry.getKey())).is2xxSuccessful()) {//2xx
+					map = parseParametersToBody(resultList);
+					jsonString = objectMapper.writeValueAsString(map);
+				} else if (HttpStatus.valueOf(Integer.parseInt(apiResponseEntry.getKey())).isError()) {//only 4xx and 5xx
+					errors = errors.getCompleteDescription(Integer.parseInt(apiResponseEntry.getKey()));
+					jsonString = objectMapper.writeValueAsString(errors);
+
+				}
+
 			}
-			}
-			String jsonString = objectMapper.writeValueAsString(parseParametersToBody(resultList));
-			log.info("::::::::Request Body String :::"+jsonString);	
+			
+		//	String jsonString = objectMapper.writeValueAsString(map);
+			
+		//	log.info("::::::::Request Body String :::"+jsonString);	
 			JsonNode  jsonNode = objectMapper.readTree(jsonString);
-			log.info("::::::::Request Body JSON :::"+jsonNode);
+			log.info("::::::::Response Body JSON :::"+jsonNode);
 			return jsonNode;
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -377,7 +396,7 @@ public class PactFactory {
 				} else {
 					mapParam.put(param.getName(), getParamValue(param));
 				}
-				log.info("::::::parseParametersToBody:::::Key:::" + param.getName() + "::::Value:::::"+ mapParam.get(param.getName()));
+			//	log.info("::::::parseParametersToBody:::::Key:::" + param.getName() + "::::Value:::::"+ mapParam.get(param.getName()));
 			});
 		}
 		return mapParam;
@@ -402,6 +421,18 @@ public class PactFactory {
 	private static Map<String, List<String>> mapHeadersWithDuplicates(List<Param> headers) {
 		return headers.stream().collect(Collectors.groupingBy(Param::getName,
 				Collectors.mapping(param -> String.valueOf(getParamValue(param)), Collectors.toList())));
+	}
+	
+
+	private static Class<?> getClassType(String str) {
+		if ("boolean".equalsIgnoreCase(str)) {
+			return Boolean.class;
+		}
+		if ("string".equalsIgnoreCase(str)) {
+			return String.class;
+		}else {
+			return String.class;
+		}
 	}
 
 }

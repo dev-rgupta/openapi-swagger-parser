@@ -1,0 +1,940 @@
+openapi: 3.0.0
+info:
+  title: Checkout Session Service
+  description: API to create, retrieve and update the checkout session. This service also serves as a layer of abstraction between Order Staging Services (OSS) and the calling services
+  version: 'v1beta'
+  contact:
+    name: "eCommerce Checkout API Core Team"
+    email: "eCommCKOPolaris@expedia.com"
+  x-eg-lifecycle: "PLANNED"
+
+paths:
+  /css/session/create:
+    post:
+      tags:
+        - css-session-create
+      summary: Create Checkout Session
+      description: Create Checkout Session
+      operationId: createSession
+      security:
+        - checkoutAuth:
+            - checkout.session.write
+      parameters:
+        - name: trace_id
+          in: header
+          description:
+            UUID for easier correlation of logs associated with servicing this specific request.
+          required: false
+          schema:
+            type: string
+            format: "uuid"
+        - name: client_id
+          in: header
+          description: identifier for apps hitting the Checkout API
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CheckoutSessionCreateRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CheckoutSessionCreateResponse'
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CheckoutSessionCreateResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                errors:
+                  - name: urn:expedia-platform-error-type:bad-request
+                    level: Error
+                    recommendation: None
+                    timeStamp: '2021-03-11T20:24:48.676Z'
+                    correlationId: "aa97b177-9383-4934-8543-0f91a7a02836"
+                    message: Bad Request
+                    description: StagingOrderData can not be empty
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                errors:
+                  - name: urn:expedia-platform-error-type:unauthorized
+                    level: Error
+                    recommendation: None
+                    timeStamp: '2021-03-11T20:24:48.676Z'
+                    correlationId: "aa97b177-9383-4934-8543-0f91a7a02836"
+                    message: Unauthorized
+                    description: Your client is not authorized to access CheckoutSessionAPI
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                errors:
+                  - name: urn:expedia-platform-error-type:forbidden
+                    level: Error
+                    recommendation: None
+                    timeStamp: '2021-03-11T20:24:48.676Z'
+                    correlationId: "aa97b177-9383-4934-8543-0f91a7a02836"
+                    message: Forbidden
+                    description: Your client is forbidden to access CheckoutSessionAPI
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                errors:
+                  - name: urn:expedia-platform-error-type:resource-not-found
+                    level: Error
+                    recommendation: None
+                    timeStamp: '2021-03-11T20:24:48.676Z'
+                    correlationId: "aa97b177-9383-4934-8543-0f91a7a02836"
+                    message: Resource Not Found
+                    description: Resource Not Found
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                errors:
+                  - name: urn:expedia-platform-error-type:server-error
+                    level: Error
+                    recommendation: None
+                    timeStamp: '2021-03-11T20:24:48.676Z'
+                    correlationId: "aa97b177-9383-4934-8543-0f91a7a02836"
+                    message: Internal server error
+                    description: Container service has timed out.
+      deprecated: false
+
+  /css/session/retrieve:
+    post:
+      tags:
+        - css-session-retrieve
+      summary: Retrieve Checkout Session
+      description: Retrieve Checkout Session
+      operationId: retrieveSession
+      security:
+        - checkoutAuth:
+            - checkout.session.write
+      parameters:
+        - name: trace_id
+          in: header
+          description:
+            UUID for easier correlation of logs associated with servicing this specific request.
+          required: false
+          schema:
+            type: string
+            format: "uuid"
+        - name: client_id
+          in: header
+          description: identifier for apps hitting the Checkout API
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CheckoutSessionRetrieveRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CheckoutSessionRetrieveResponse'
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CheckoutSessionRetrieveResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                errors:
+                  - name: urn:expedia-platform-error-type:bad-request
+                    level: Error
+                    recommendation: None
+                    timeStamp: '2021-03-11T20:24:48.676Z'
+                    correlationId: "aa97b177-9383-4934-8543-0f91a7a02836"
+                    message: Bad Request
+                    description: CheckoutSessionId can not be undefined
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                errors:
+                  - name: urn:expedia-platform-error-type:unauthorized
+                    level: Error
+                    recommendation: None
+                    timeStamp: '2021-03-11T20:24:48.676Z'
+                    correlationId: "aa97b177-9383-4934-8543-0f91a7a02836"
+                    message: Unauthorized
+                    description: Your client is not authorized to access CheckoutSessionAPI
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                errors:
+                  - name: urn:expedia-platform-error-type:forbidden
+                    level: Error
+                    recommendation: None
+                    timeStamp: '2021-03-11T20:24:48.676Z'
+                    correlationId: "aa97b177-9383-4934-8543-0f91a7a02836"
+                    message: Forbidden
+                    description: Your client is forbidden to access CheckoutSessionAPI
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                errors:
+                  - name: urn:expedia-platform-error-type:resource-not-found
+                    level: Error
+                    recommendation: None
+                    timeStamp: '2021-03-11T20:24:48.676Z'
+                    correlationId: "aa97b177-9383-4934-8543-0f91a7a02836"
+                    message: Resource Not Found
+                    description: Resource Not Found
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                errors:
+                  - name: urn:expedia-platform-error-type:server-error
+                    level: Error
+                    recommendation: None
+                    timeStamp: '2021-03-11T20:24:48.676Z'
+                    correlationId: "aa97b177-9383-4934-8543-0f91a7a02836"
+                    message: Internal server error
+                    description: Container service has timed out.
+      deprecated: false
+
+  /css/session/update:
+    patch:
+      tags:
+        - css-session-update
+      summary: Update Checkout Session
+      description: Updates OSS with updated item offers by means of requested offer id
+      operationId: updateSession
+      security:
+        - checkoutAuth:
+            - checkout.session.write
+      parameters:
+        - name: trace_id
+          in: header
+          description:
+            UUID for easier correlation of logs associated with servicing this specific request.
+          required: false
+          schema:
+            type: string
+            format: "uuid"
+        - name: client_id
+          in: header
+          description: identifier for apps hitting the Checkout API
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CheckoutSessionUpdateRequest'
+      responses:
+        '204':
+          description: No Content
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                errors:
+                  - name: urn:expedia-platform-error-type:bad-request
+                    level: Error
+                    recommendation: None
+                    timeStamp: '2021-03-11T20:24:48.676Z'
+                    correlationId: "aa97b177-9383-4934-8543-0f91a7a02836"
+                    message: Bad Request
+                    description: CheckoutSessionId can not be undefined
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                errors:
+                  - name: urn:expedia-platform-error-type:unauthorized
+                    level: Error
+                    recommendation: None
+                    timeStamp: '2021-03-11T20:24:48.676Z'
+                    correlationId: "aa97b177-9383-4934-8543-0f91a7a02836"
+                    message: Unauthorized
+                    description: Your client is not authorized to access CheckoutSessionAPI
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                errors:
+                  - name: urn:expedia-platform-error-type:forbidden
+                    level: Error
+                    recommendation: None
+                    timeStamp: '2021-03-11T20:24:48.676Z'
+                    correlationId: "aa97b177-9383-4934-8543-0f91a7a02836"
+                    message: Forbidden
+                    description: Your client is forbidden to access CheckoutSessionAPI
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                errors:
+                  - name: urn:expedia-platform-error-type:resource-not-found
+                    level: Error
+                    recommendation: None
+                    timeStamp: '2021-03-11T20:24:48.676Z'
+                    correlationId: "aa97b177-9383-4934-8543-0f91a7a02836"
+                    message: Resource Not Found
+                    description: Resource Not Found
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                errors:
+                  - name: urn:expedia-platform-error-type:server-error
+                    level: Error
+                    recommendation: None
+                    timeStamp: '2021-03-11T20:24:48.676Z'
+                    correlationId: "aa97b177-9383-4934-8543-0f91a7a02836"
+                    message: Internal server error
+                    description: Container service has timed out.
+      deprecated: false
+
+components:
+  securitySchemes:
+    checkoutAuth:
+      type: oauth2
+      flows:
+        clientCredentials:
+          tokenUrl: /oauth/token?grant_type=checkout_client_credentials
+          scopes:
+            checkout.session.read: Get checkout session state
+            checkout.session.write: Write checkout session state
+
+  schemas:
+    Error:
+      type: object
+      required:
+        - correlationId
+        - level
+        - message
+        - name
+        - recommendation
+        - timeStamp
+      properties:
+        name:
+          type: string
+          format: urn
+          example: urn:expedia-platform-error-type:resource-not-found
+        level:
+          type: string
+          enum:
+            - Error
+            - Warning
+        recommendation:
+          type: string
+          enum:
+            - Retry
+            - None
+        timeStamp:
+          type: string
+          format: date-time
+        correlationId:
+          type: string
+          format: "uuid"
+          example: "aa97b177-9383-4934-8543-0f91a7a02836"
+        message:
+          type: string
+          maxLength: 255
+          minLength: 1
+          example: Something bad happened here.
+        description:
+          type: string
+          maxLength: 2048
+          minLength: 0
+          example: A very detailed description of the error and instructions on what to do about it.
+        documentationLink:
+          type: string
+          format: uri
+          example: https://docs.api.expedia.com/errors/urn:expedia-platform-error-type:resource-not-found/en-us/details.html
+        offendingInputs:
+          type: array
+          items:
+            $ref: '#/components/schemas/ErrorOffendingInput'
+        additionalPropertyBags:
+          type: array
+          items:
+            $ref: '#/components/schemas/ErrorPropertyBag'
+
+    ErrorCollection:
+      type: array
+      items:
+        $ref: '#/components/schemas/Error'
+
+    ErrorOffendingInput:
+      type: object
+      required:
+        - name
+        - value
+        - source
+      properties:
+        name:
+          type: string
+          example: "language"
+        value:
+          type: string
+          example: "ex-us"
+        source:
+          type: string
+          enum:
+            - Query
+            - Body
+
+    ErrorPropertyBag:
+      type: object
+      additionalProperties:
+        type: string
+        example: some value
+
+    TermsAndCondition:
+      type: object
+      description: A container for all term and condition of a product
+      properties:
+        text:
+          type: string
+        identifier:
+          type: string
+
+    StagingOrderData:
+      type: object
+      description: A container for all Staging Order Data
+      properties:
+        text:
+          type: string
+        identifier:
+          type: string
+
+    ValidationRule:
+      type: string
+      description: validation rule associated with a product.
+
+    BookingField:
+      type: object
+      description: A container for all information that supply needs/takes to complete a booking
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        mandatory:
+          type: boolean
+          default: false
+        predefinedValues:
+          type: array
+          items:
+            properties:
+              value:
+                type: string
+        validationRules:
+          type: array
+          items:
+            $ref: '#/components/schemas/ValidationRule'
+
+    CheckoutSessionCreateRequest:
+      type: object
+      description: Checkout session create request
+      required:
+        - stagingOrderData
+        - contextInput
+      properties:
+        stagingOrderData:
+          $ref: '#/components/schemas/StagingOrderData'
+        termsAndConditions:
+          type: array
+          items:
+            $ref: "#/components/schemas/TermsAndCondition"
+        bookingFields:
+          type: array
+          items:
+            $ref: '#/components/schemas/BookingField'
+        #ContextInput based off of https://github.expedia.biz/eg-business-domains/eg-business-domains-protos/blob/master/expediagroup/context/v1/context.proto
+        contextInput:
+          $ref: '#/components/schemas/Context'
+
+    CheckoutSessionCreateResponse:
+      type: object
+      properties:
+        checkoutSessionId:
+          $ref: '#/components/schemas/CheckoutSessionId'
+
+    CheckoutSessionId:
+      type: string
+      description: Identifier for a checkout session, can be used to retrieve the state of a checkout session.
+
+    CheckoutSessionRetrieveRequest:
+      type: object
+      description: Retrieve itemOffers List from a checkoutSessionId
+      required:
+        - checkoutSessionId
+        - contextInput
+      properties:
+        checkoutSessionId:
+          $ref: '#/components/schemas/CheckoutSessionId'
+        #ContextInput based off of https://github.expedia.biz/eg-business-domains/eg-business-domains-protos/blob/master/expediagroup/context/v1/context.proto
+        contextInput:
+          $ref: '#/components/schemas/Context'
+
+    CheckoutSessionRetrieveResponse:
+      type: object
+      required:
+        - itemOffers
+        - termsAndConditions
+        - bookingFields
+        - paymentSecret
+        - paymentSessionId
+        - stagingOrderId
+        - orderServiceUrl
+        - stagingOrderUserId
+      properties:
+        itemOffers:
+          type: array
+          description: List of ItemOffer corresponding to the list of SupplyOfferToken passed in.
+          items:
+            $ref: '#/components/schemas/ItemOffer'
+        termsAndConditions:
+          type: array
+          items:
+            $ref: "#/components/schemas/TermsAndCondition"
+        bookingFields:
+          type: array
+          items:
+            $ref: '#/components/schemas/BookingField'
+        paymentSecret:
+          type: string
+          description: Secret for the Payment service.
+        paymentSessionId:
+          type: string
+          description: Identifier for a payment session, can be used to retrieve the state of a payment session.
+        stagingOrderId:
+          type: string
+          description: Identifier for the stagingOrder.
+        orderServiceUrl:
+          type: string
+          description: orderServiceUrl is returned when StagingOrder has been booked or after a successful booking, however, this is only available for the 24 hour lifespan of the sessionId
+        stagingOrderUserId:
+          type: string
+          description: Identifier for the session user.
+
+    CheckoutSessionUpdateRequest:
+      type: object
+      description: Checkout session update request
+      properties:
+        checkoutSessionId:
+          $ref: '#/components/schemas/CheckoutSessionId'
+        itemOffers:
+          type: array
+          items:
+            $ref: "#/components/schemas/ItemOffer"
+        stagingOrderData:
+          $ref: '#/components/schemas/StagingOrderData'
+        #ContextInput based off of https://github.expedia.biz/eg-business-domains/eg-business-domains-protos/blob/master/expediagroup/context/v1/context.proto
+        contextInput:
+          $ref: '#/components/schemas/Context'
+
+    CheckoutSessionUpdateResponse:
+      type: object
+      properties:
+        errors:
+          $ref: '#/components/schemas/ErrorCollection'
+
+    # Todo: Once official Context component definition is ready, will remove the Context component block below and its references.
+    Context:
+      type: object
+      description: Contextual information about the client/user and the site/application invoking a service endpoint. VERY IMPORTANT!! This context is pretty much locked down! This does not mean it cannot change but changes to it affect a wide range of messages and service. Unless a change is really needed to expose a platform capability
+      properties:
+        currency:
+          type: string
+          description: ISO currency code, e.g. "USD".
+        deviceContext:
+          $ref: '#/components/schemas/DeviceContext'
+        experiments:
+          type: array
+          description: Pre-evaluated experiments that can be passed down from clients to be consumed in various downstream services and extensions.
+          items:
+            $ref: '#/components/schemas/Experiment'
+        locale:
+          type: string
+          description: IETF BCP 47 language tag, e.g. "en-US".
+        loggingEnabled:
+          type: boolean
+          description: Indicates that the client wishes request and response blobs logged to haystack
+        pointOfSaleContext:
+          $ref: '#/components/schemas/PointOfSaleContext'
+        user:
+          $ref: '#/components/schemas/UserContext'
+
+    DeviceContext:
+      type: object
+      properties:
+        crossDomainId:
+          type: string
+          description: Identifies a client across multiple points of sale for a browser
+        deviceType:
+          type: string
+          description: The deice type used by the user
+          enum:
+            - DEVICE_TYPE_INVALID
+            - DEVICE_TYPE_DESKTOP
+            - DEVICE_TYPE_MOBILE_PHONE
+            - DEVICE_TYPE_MOBILE_TABLET
+            - DEVICE_TYPE_APP_PHONE
+            - DEVICE_TYPE_APP_TABLET
+        deviceUserAgentId:
+          type: string
+          description: Anonymous device ID, e.g. DUAID (GUID)
+        ip:
+          type: string
+          description: The IP address of the user, typically from "X-Forwarded-For" HTTP header.
+        userAgent:
+          type: string
+          description: The application type, operating system, software vendor or software version of the originating request.
+
+    DueAt:
+      type: string
+      description: 'Determines if the payment needs to be addressed at the point of sale or at the point of supply'
+      enum:
+        - DUE_AT_POINT_OF_SALE
+        - DUE_AT_POINT_OF_SUPPLY
+
+    Experiment:
+      type: object
+      description: Represents an experiment evaluation, agnostic of a brand's experimentation framework.
+      properties:
+        bucket:
+          type: integer
+          description: The evaluated bucket, or treatment of the experiment.
+          format: int32
+        id:
+          type: integer
+          description: Numeric ID, if one exists in the experimentation framework.
+          format: int32
+        name:
+          type: string
+          description: Experiment name, if one exists in the experimentation framework.
+
+    FinancialAmount:
+      type: object
+      description: Financial amount object to be reconciled after decision
+      properties:
+        money:
+          $ref: '#/components/schemas/Money'
+        monetaryClassification:
+          $ref: '#/components/schemas/MonetaryClassification'
+        monetaryComputationalSource:
+          $ref: '#/components/schemas/MonetaryComputationalSource'
+        monetaryComputationalReference:
+          type: string
+          description: 'A reference from the computational source that uniquely identifies this financial amount'
+        createDateTime:
+          type: string
+          description: 'DateTime is the moment in time when the monetary value (amount) is created'
+          format: date-time
+        applyDate:
+          type: string
+          description: 'Date when the monetary value (money) will be exercised and considered as revenue'
+          format: date
+
+    ItemOffer:
+      type: object
+      description: Data blob that Supply Service returns as part of creation of itemOffer
+      required:
+        - id
+        - supplyOfferToken
+        - itemOfferType
+      properties:
+        id:
+          type: string
+        supplyOfferToken:
+          $ref: '#/components/schemas/SupplyOfferToken'
+        itemOfferType:
+          type: string
+          enum:
+            - ITEM_OFFER_TYPE_FLIGHT
+            - ITEM_OFFER_TYPE_PROPERTY
+            - ITEM_OFFER_TYPE_CAR
+            - ITEM_OFFER_TYPE_ACTIVITY
+            - ITEM_OFFER_TYPE_GROUND_TRANSPORTATION
+            - ITEM_OFFER_TYPE_CRUISE
+            - ITEM_OFFER_TYPE_INSURANCE
+            - ITEM_OFFER_TYPE_COUPON
+            - ITEM_OFFER_TYPE_LOYALTY
+            - ITEM_OFFER_TYPE_AIRLINE_CARD_FEE
+            - ITEM_OFFER_TYPE_PAID_SEATS
+            - ITEM_OFFER_TYPE_PREPAY_BAGGAGE
+            - ITEM_OFFER_TYPE_BOOKING_FEE
+        childItemOffers:
+          type: array
+          items:
+            $ref: '#/components/schemas/ItemOffer'
+        siblingItemOfferIds:
+          type: array
+          items:
+            $ref: '#/components/schemas/ItemOfferId'
+        pricingStructure:
+          $ref: '#/components/schemas/PricingStructure'
+
+
+    ItemOfferId:
+      type: string
+      description: Id of other itemOffer
+
+    LegacyPointOfSale:
+      type: object
+      description: Represents the Legacy Point Of Sale identifiers
+      properties:
+        eapId:
+          type: integer
+          description: Expedia Affiliate Partner ID.
+          format: int32
+        tpId:
+          type: integer
+          description: Travel Product ID, legacy ID that identifies a point of sale.
+          format: int32
+
+    MonetaryCategory:
+      type: string
+      enum:
+        - MONETARY_CATEGORY_BASE
+        - MONETARY_CATEGORY_ADJUSTMENT
+        - MONETARY_CATEGORY_DISCOUNT
+        - MONETARY_CATEGORY_SERVICE_FEE
+        - MONETARY_CATEGORY_TAX
+
+    MonetaryClassification:
+      type: object
+      properties:
+        category:
+          $ref: '#/components/schemas/MonetaryCategory'
+        subCategory1:
+          type: string
+        subCategory2:
+          type: string
+
+    MonetaryComputationalSource:
+      type: string
+      description: 'Represents the source systems that originate the financial amounts'
+      enum:
+        - MONETARY_COMPUTATIONAL_SOURCE_EXTERNAL
+        - MONETARY_COMPUTATIONAL_SOURCE_TAX_ENGINE
+
+    # Eg Common Money Schema
+    Money:
+      type: object
+      description: Amount and the Currency Code
+      required:
+        - currencyCode
+        - amount
+        - decimalPlaces
+      properties:
+        currencyCode:
+          type: string
+          maxLength: 3
+          description: Represents the ISO 4217 currency code as definedd by https://www.currency-iso.org/dam/downloads/lists/list_one.xml
+        amount:
+          type: number
+          description: Represents the amount
+        decimalPlaces:
+          type: number
+          description: Represents the decimal places
+
+    PointOfSale:
+      type: object
+      description: Represents the PointOfSale information
+      properties:
+        companyCode:
+          type: integer
+          format: int32
+        jurisdictionCode:
+          type: string
+          description: ISO country code of the point of sale.
+        managementUnitCode:
+          type: integer
+          format: int32
+
+    PointOfSaleContext:
+      type: object
+      description: Contextual elements describing the site/point of sale.
+      properties:
+        divisionPosKey:
+          description: Brand specific point of sale identifier. For use by division level clients and corresponding extensions. Never evaluated or used within a core service.
+          properties:
+            fields:
+              type: object
+              additionalProperties: true
+        legacyPointOfSale:
+          $ref: '#/components/schemas/LegacyPointOfSale'
+        pointOfSale:
+          $ref: '#/components/schemas/PointOfSale'
+        pointOfSaleId:
+          type: string
+          description: 'New point of sale identifier for all brands. See: http://docweb.exp-tools.net/expsite/sites'
+
+    Price:
+      type: object
+      description: 'pricing details for a composition to a basic fundamental level'
+      properties:
+        type:
+          $ref: '#/components/schemas/Type'
+        subType:
+          $ref: '#/components/schemas/SubType'
+        refId:
+          type: string
+          description: 'an identifier that identifies the prices to a more fundamental level'
+        unitMeasure:
+          $ref: '#/components/schemas/UnitMeasure'
+        discriminator:
+          type: string
+          description: 'being used when the product that is being purchased is priced differently based on some parameters'
+        financialAmount:
+          $ref: '#/components/schemas/FinancialAmount'
+        dueAt:
+          $ref: '#/components/schemas/DueAt'
+
+    PriceComposition:
+      type: object
+      description: 'A portion of the product that is being purchased'
+      properties:
+        refId:
+          type: string
+          description: 'differentiates between product portions of PriceComposition'
+        prices:
+          type: array
+          items:
+            $ref: '#/components/schemas/Price'
+
+    PricingStructure:
+      type: object
+      description: 'A list of price compositions for the products being purchased in a particular transaction'
+      properties:
+        priceCompositions:
+          type: array
+          items:
+            $ref: '#/components/schemas/PriceComposition'
+
+    SupplyOfferToken:
+      type: object
+      description: 'metadata to identify the supplier offer'
+      properties:
+        supplierId:
+          type: string
+          description: The supplier's identifier
+        value:
+          type: string
+          description: Supply offer token value
+
+    SubType:
+      type: string
+      description: 'Further defines the type of price (along with type)'
+      enum:
+        - SUB_TYPE_UNKNOWN
+        - SUB_TYPE_CITY
+        - SUB_TYPE_STATE
+        - SUB_TYPE_LOCAL
+        - SUB_TYPE_COUNTY
+        - SUB_TYPE_GROSS
+        - SUB_TYPE_SERVICE
+        - SUB_TYPE_VAT
+        - SUB_TYPE_GST
+
+    Type:
+      type: string
+      description: 'Defines the type of price'
+      enum:
+        - TYPE_BASE
+        - TYPE_TAX
+        - TYPE_FEE
+        - TYPE_OPTIONAL
+
+    UnitMeasure:
+      type: string
+      description: 'Defines the unit for the current price'
+      enum:
+        - UNIT_MEASURE_OTHER
+        - UNIT_MEASURE_ADULT
+        - UNIT_MEASURE_CHILD
+        - UNIT_MEASURE_TRANSACTION
+        - UNIT_MEASURE_DAY
+        - UNIT_MEASURE_WEEK
+
+    UserContext:
+      type: object
+      description: User and device specific information.
+      properties:
+        customerJurisdictionCode:
+          type: string
+          description: Jurisdiction (Country) User is coming from
+        secondaryUserId:
+          type: string
+          description: Secondary user identifier - used for brand specific functions, such as loyalty.
+        userId:
+          type: string
+          description: Primary user identifier - usually TUID for most brands.

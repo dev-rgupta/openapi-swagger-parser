@@ -87,12 +87,6 @@
 			<artifactId>podam</artifactId>
 			<version>7.2.6.RELEASE</version>
 		</dependency>
-
-		<!-- <dependency> -->
-		<!-- <groupId>org.projectlombok</groupId> -->
-		<!-- <artifactId>lombok</artifactId> -->
-		<!-- <scope>provided</scope> -->
-		<!-- </dependency> -->
 	</dependencies>
 
 	<build>

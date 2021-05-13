@@ -15,4 +15,5 @@ public class InteractionResponse {
     private final String statusCode;
     private final Map<String, String> headers;
     private final JsonNode body;
+    private final JsonNode matchingRules;
 }
