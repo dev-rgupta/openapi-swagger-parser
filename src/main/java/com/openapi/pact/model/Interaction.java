@@ -8,6 +8,7 @@ import lombok.Data;
 public class Interaction {
 
     private final String description;
+    private final String providerState;
     private final InteractionRequest request;
     private final InteractionResponse response;
 }

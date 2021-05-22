@@ -22,7 +22,10 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-web</artifactId>
 		</dependency>
-
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-context</artifactId>
+		</dependency>
 		<dependency>
 			<groupId>org.projectlombok</groupId>
 			<artifactId>lombok</artifactId>
@@ -39,54 +42,42 @@
 			<artifactId>swagger-parser</artifactId>
 			<version>2.0.25</version>
 		</dependency>
-
-
-		<!-- https://mvnrepository.com/artifact/com.googlecode.json-simple/json-simple -->
-<!-- 		<dependency> -->
-<!-- 			<groupId>com.googlecode.json-simple</groupId> -->
-<!-- 			<artifactId>json-simple</artifactId> -->
-<!-- 			<version>1.1</version> -->
-<!-- 		</dependency> -->
-		<dependency>
-			<groupId>commons-collections</groupId>
-			<artifactId>commons-collections</artifactId>
-			<version>3.2.2</version>
-		</dependency>
-<!-- 		<dependency> -->
-<!-- 			<groupId>io.swagger</groupId> -->
-<!-- 			<artifactId>swagger-inflector</artifactId> -->
-<!-- 			<version>1.0.1</version> -->
-<!-- 		</dependency> -->
-		<!-- https://mvnrepository.com/artifact/org.wso2.orbit.io.swagger/swagger-inflector -->
-<!-- 		<dependency> -->
-<!-- 			<groupId>org.wso2.orbit.io.swagger</groupId> -->
-<!-- 			<artifactId>swagger-inflector</artifactId> -->
-<!-- 			<version>1.0.16.wso2v1</version> -->
-<!-- 		</dependency> -->
-		<!-- https://mvnrepository.com/artifact/org.wso2.orbit.io.swagger/swagger-inflector-oas3 -->
-<!-- 		<dependency> -->
-<!-- 			<groupId>org.wso2.orbit.io.swagger</groupId> -->
-<!-- 			<artifactId>swagger-inflector-oas3</artifactId> -->
-<!-- 			<version>2.0.5.wso2v1</version> -->
-<!-- 		</dependency> -->
-		<!-- https://mvnrepository.com/artifact/org.json/json -->
-		<dependency>
-			<groupId>org.json</groupId>
-			<artifactId>json</artifactId>
-			<version>20210307</version>
-		</dependency>
-		<!-- https://mvnrepository.com/artifact/junit/junit -->
-		<dependency>
-			<groupId>junit</groupId>
-			<artifactId>junit</artifactId>
-			<scope>test</scope>
-		</dependency>
 		<!-- https://mvnrepository.com/artifact/uk.co.jemos.podam/podam -->
 		<dependency>
 			<groupId>uk.co.jemos.podam</groupId>
 			<artifactId>podam</artifactId>
 			<version>7.2.6.RELEASE</version>
 		</dependency>
+
+		<!-- https://mvnrepository.com/artifact/au.com.dius.pact.provider/junit5spring -->
+		<dependency>
+			<groupId>au.com.dius.pact.provider</groupId>
+			<artifactId>junit5spring</artifactId>
+			<version>4.2.5</version>
+		</dependency>
+
+		<!-- <dependency> -->
+		<!-- <groupId>au.com.dius.pact.provider</groupId> -->
+		<!-- <artifactId>junit5</artifactId> -->
+		<!-- <version>4.2.5</version> -->
+		<!-- </dependency> -->
+
+<!-- 		<dependency> -->
+<!-- 			<groupId>au.com.dius</groupId> -->
+<!-- 			<artifactId>pact-jvm-provider-junit5_2.12</artifactId> -->
+<!-- 			<version>3.5.20</version> -->
+<!-- 		</dependency> -->
+		<dependency>
+			<groupId>au.com.dius</groupId>
+			<artifactId>pact-jvm-consumer-junit</artifactId>
+			<version>4.0.3</version>
+		</dependency>
+		<dependency>
+			<groupId>au.com.dius</groupId>
+			<artifactId>pact-jvm-consumer-java8</artifactId>
+			<version>4.0.3</version>
+		</dependency>
+
 	</dependencies>
 
 	<build>
@@ -94,16 +85,30 @@
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
+			</plugin>
+			<plugin>
+				<groupId>au.com.dius.pact.provider</groupId>
+				<artifactId>maven</artifactId>
+				<version>4.1.11</version>
 				<configuration>
-					<excludes>
-						<exclude>
-							<groupId>org.projectlombok</groupId>
-							<artifactId>lombok</artifactId>
-						</exclude>
-					</excludes>
+					<pactBrokerUrl>https://dev-rgupta.pactflow.io/</pactBrokerUrl>
+					<pactBrokerToken>QoXeUwD8k5OENElS5EuDiA</pactBrokerToken> <!-- Replace TOKEN with the actual token -->
+					<pactBrokerAuthenticationScheme>Bearer</pactBrokerAuthenticationScheme>
+					<serviceProviders>
+						<serviceProvider>
+							<stateChangeUrl>http://localhost:8080/pactStateChange</stateChangeUrl>
+							<name>test-provider</name>
+						</serviceProvider>
+					</serviceProviders>
+					<configuration>
+						<pact.showStacktrace>true</pact.showStacktrace>
+						<pact.verifier.publishResults>true</pact.verifier.publishResults>
+					</configuration>
 				</configuration>
 			</plugin>
+
 		</plugins>
+
 	</build>
 
 </project>

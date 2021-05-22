@@ -3,7 +3,7 @@ package com.openapi.pact;
 import lombok.Data;
 
 @Data
-public class Service {
+public class Services {
 
     private final String name;
 }

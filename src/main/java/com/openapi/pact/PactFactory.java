@@ -13,12 +13,14 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.github.michaelbull.result.Result;
 import com.openapi.pact.errors.ErrorResources;
 import com.openapi.pact.gen.PactGenerationException;
 import com.openapi.pact.model.Interaction;
@@ -29,6 +31,9 @@ import com.openapi.pact.model.Pact;
 import com.openapi.pact.model.PactSpecification;
 import com.openapi.pact.model.Param;
 
+import au.com.dius.pact.consumer.ConsumerPactBuilder;
+import au.com.dius.pact.core.model.PactSpecVersion;
+import au.com.dius.pact.core.model.RequestResponsePact;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.Operation;
 import io.swagger.v3.oas.models.PathItem;
@@ -45,12 +50,13 @@ import uk.co.jemos.podam.api.PodamFactory;
 import uk.co.jemos.podam.api.PodamFactoryImpl;
 
 @Slf4j
+@Component
 public class PactFactory {
-
 	private static final PodamFactory podamFactory;
-	@Autowired
-	private static HttpStatus httpStatus;
-	Map<String, Object> map = new LinkedHashMap<>();
+	
+	@Value("${isOnlyHappyCase}")
+	private boolean isOnlyHappyCase=true;
+	
 	static {
 		podamFactory = new PodamFactoryImpl();
 		podamFactory.getStrategy().addOrReplaceTypeManufacturer(String.class, new EnumStringManufacturer());
@@ -59,18 +65,18 @@ public class PactFactory {
 		podamFactory.getStrategy().setDefaultNumberOfCollectionElements(1);
 	}
 
-	public Pact createPacts(OpenAPI oapi, String consumerName) {
+	public Pact createPacts(OpenAPI oapi, String consumerName, String producerName, String pactSpecificationVersion) {
 		ObjectMapper objectMapper = new ObjectMapper();
 		objectMapper.configure(SerializationFeature.INDENT_OUTPUT, true);
-		return Pact.builder().provider(new Service("test-provider")) // configure
-				.consumer(new Service(consumerName)) // configure
-				.interactions(createInteractionsFromMethods(oapi, objectMapper, null))
-				.metadata(new Metadata(new PactSpecification("1.0.0"))) // configure
+		return Pact.builder()
+				.provider(new Services(producerName)) // configure
+				.consumer(new Services(consumerName)) // configure
+				.interactions(createInteractionsFromMethods(oapi, objectMapper))
+				.metadata(new Metadata(new PactSpecification(pactSpecificationVersion))) // configure
 				.build();
 	}
 
-	private  List<Interaction> createInteractionsFromMethods(OpenAPI oapi, ObjectMapper objectMapper,
-			String pathPrefix) {
+	private  List<Interaction> createInteractionsFromMethods(OpenAPI oapi, ObjectMapper objectMapper) {
 		List<Interaction> interactionResults = new ArrayList<>();
 		Paths paths = oapi.getPaths();
 		for (Map.Entry<String, PathItem> pathItem : paths.entrySet()) {
@@ -89,33 +95,63 @@ public class PactFactory {
 
 	private  List<Interaction> getInteractionsForEveryResponseCode(Entry<String, Operation> entry, String path,
 			ObjectMapper objectMapper) {
-		
 		List<Interaction> interactionList = new LinkedList<>();
-		InteractionRequest interactionRequest = InteractionRequest.builder().method(entry.getKey())
+		InteractionRequest interactionRequest = prepareInteractionRequest(entry, path, objectMapper);
+
+		Iterator<Entry<String, ApiResponse>> apiResponseEntryItr = entry.getValue().getResponses().entrySet()
+				.iterator();
+		while (apiResponseEntryItr.hasNext()) {
+			InteractionResponse interactionResponse = null;
+			Interaction intraction = null;
+			Entry<String, ApiResponse> apiResponseEntry = apiResponseEntryItr.next();
+			if (isOnlyHappyCase) {
+				interactionResponse = prepareHappyInteractionResponse(objectMapper, apiResponseEntry);
+				if(Objects.nonNull(interactionResponse)) {
+				intraction = prepareInteraction(entry, interactionRequest, interactionResponse);
+				interactionList.add(intraction);
+				}
+			} else {
+				interactionResponse = prepareInteractionResponse(objectMapper, apiResponseEntry);
+				intraction = prepareInteraction(entry, interactionRequest, interactionResponse);
+				interactionList.add(intraction);
+			}
+		}
+		return interactionList;
+	}
+ 
+	private Interaction prepareInteraction(Entry<String, Operation> entry, InteractionRequest interactionRequest,
+			InteractionResponse interactionResponse) {
+		return Interaction.builder()
+				.description(entry.getValue().getDescription() != null ? entry.getValue().getDescription(): entry.getValue().getSummary())
+				.providerState(entry.getValue().getOperationId())
+				.request(interactionRequest)
+				.response(interactionResponse).build();
+	}
+
+	private InteractionRequest prepareInteractionRequest(Entry<String, Operation> entry, String path,
+			ObjectMapper objectMapper) {
+		return  InteractionRequest.builder().method(entry.getKey())
 				.path(requestPathParamGenerator(entry.getValue(), objectMapper, path))
 				.headers(requestHeaderParamGenerator(entry.getValue(), objectMapper))
 				.query(requestQueryParamGenerator(entry.getValue(), objectMapper))
 				.body(requestBodyGenerator(entry.getValue(), objectMapper)).build();
-		
-		Iterator<Entry<String, ApiResponse>> apiResponseEntryItr = entry.getValue().getResponses().entrySet()
-				.iterator();
-		
-		while (apiResponseEntryItr.hasNext()) {
-			Entry<String, ApiResponse> apiResponseEntry = apiResponseEntryItr.next();
-			InteractionResponse interactionResponse = InteractionResponse.builder().status(apiResponseEntry.getKey())
-					.headers(responseHeaderParamGenerator(apiResponseEntry.getValue().getHeaders()))
-					.body(responseBodyGenerator(apiResponseEntry, objectMapper)).build();
-			
-			Interaction intraction = Interaction.builder()
-					.description(entry.getValue().getSummary())
-					.request(interactionRequest)
-					.response(interactionResponse)
-					.build();
-			
-			interactionList.add(intraction);
+	}
 
+	private InteractionResponse prepareHappyInteractionResponse(ObjectMapper objectMapper, Entry<String, ApiResponse> apiResponseEntry) {
+		InteractionResponse interactionResponse=null;
+		//HttpStatus.valueOf(Integer.parseInt(apiResponseEntry.getKey())).is2xxSuccessful()
+		if (HttpStatus.valueOf(Integer.parseInt(apiResponseEntry.getKey())).is2xxSuccessful()) {
+			interactionResponse = InteractionResponse.builder().status(apiResponseEntry.getKey())
+				.headers(responseHeaderParamGenerator(apiResponseEntry.getValue().getHeaders()))
+				.body(responseBodyGenerator(apiResponseEntry, objectMapper)).build();
 		}
-		return interactionList;
+		return interactionResponse;
+	}
+	
+	private InteractionResponse prepareInteractionResponse(ObjectMapper objectMapper, Entry<String, ApiResponse> apiResponseEntry) {
+			return  InteractionResponse.builder().status(apiResponseEntry.getKey())
+				.headers(responseHeaderParamGenerator(apiResponseEntry.getValue().getHeaders()))
+				.body(responseBodyGenerator(apiResponseEntry, objectMapper)).build();
 	}
 
 	private static String requestQueryParamGenerator(Operation operation, ObjectMapper objectMapper) {
@@ -199,11 +235,10 @@ public class PactFactory {
 					resultList = extractedParamList(resultList, itr);
 					}
 			}
-			//objectMapper.configure(SerializationFeature.INDENT_OUTPUT, true);
 			String jsonString = objectMapper.writeValueAsString(parseParametersToBody(resultList));
 		//	log.info("::::::::Request Body String :::"+jsonString);	
 			JsonNode  jsonNode = objectMapper.readTree(jsonString);
-			log.info("::::::::Request Body JSON :::"+jsonNode);
+		//	log.info("::::::::Request Body JSON :::"+jsonNode);
 			return jsonNode;
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -251,11 +286,9 @@ public class PactFactory {
 
 			}
 			
-		//	String jsonString = objectMapper.writeValueAsString(map);
-			
 		//	log.info("::::::::Request Body String :::"+jsonString);	
 			JsonNode  jsonNode = objectMapper.readTree(jsonString);
-			log.info("::::::::Response Body JSON :::"+jsonNode);
+		//	log.info("::::::::Response Body JSON :::"+jsonNode);
 			return jsonNode;
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -365,25 +398,18 @@ public class PactFactory {
 
 	@SuppressWarnings("unchecked")
 	private static Object getParamValueFromArray(Param param) {
-		// result is [{ "abc":"test","bed":"cot","help":"me"}]
-		Map<String, Object> objMap=	parseParametersToBody((List<Param>) param.getDefaultValue());
-		
+		Map<String, Object> objMap = parseParametersToBody((List<Param>) param.getDefaultValue());
 		List<Object> object = new ArrayList<>();
-		// simply put obj into ArrayList
 		object.add(objMap);
-		// result is [{ "abc":"test","bed":"cot","help":"me"}]
-	    // log.info("::::::getParamValue:::::jsonArray:::"	+ objMap);
-		
+		// log.info("::::::getParamValue:::::jsonArray:::" + objMap);
 		return object;
 	}
 	
 	private static Object manufacturePojo(Class<?> type) {
 		Object manufacturedPojo = podamFactory.manufacturePojo(type);
-
 		if (manufacturedPojo == null) {
 			throw new PactGenerationException("Podam manufacturing failed");
 		}
-
 		return manufacturedPojo;
 	}
 
@@ -411,10 +437,8 @@ public class PactFactory {
 			if (mappedHeadersWithDuplicates.get(key).size() > 1) {
 				log.warn("More than one value for header: {}", key);
 			}
-
 			resultingHeaders.put(key, mappedHeadersWithDuplicates.get(key).get(0));
 		}
-
 		return resultingHeaders;
 	}
 
@@ -430,9 +454,31 @@ public class PactFactory {
 		}
 		if ("string".equalsIgnoreCase(str)) {
 			return String.class;
-		}else {
+		}
+		if ("integer".equalsIgnoreCase(str)) {
+			return Integer.class;
+		} else {
 			return String.class;
 		}
+	}
+
+	public void testPact2() {
+		Map<String, String> headers = new HashMap<String, String>();
+		headers.put("Content-Type", "application/json;charset=UTF-8");
+
+		RequestResponsePact pact = ConsumerPactBuilder.consumer("JunitDSLConsumer2").hasPactWith("ExampleProvider")
+				.given("").uponReceiving("Query name is Nanoha").path("/information").query("name=Nanoha").method("GET")
+				.willRespondWith().headers(headers).status(200)
+				.body("{\n" + "    \"salary\": 80000,\n" + "    \"name\": \"Takamachi Nanoha\",\n"
+						+ "    \"nationality\": \"Japan\",\n" + "    \"contact\": {\n"
+						+ "        \"Email\": \"takamachi.nanoha@ariman.com\",\n"
+						+ "        \"Phone Number\": \"9090940\"\n" + "    }\n" + "}")
+				.toPact();
+		// .sortInteractions();
+
+		System.out.println(":::::::pact::::::::" + pact.toString());
+		Result<Integer, Throwable> result = pact.write("pacts/", PactSpecVersion.V3);
+		System.out.println(":::::::result::::::::" + result.toString());
 	}
 
 }

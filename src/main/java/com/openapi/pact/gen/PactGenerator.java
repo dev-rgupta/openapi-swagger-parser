@@ -12,7 +12,7 @@ import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 import com.openapi.pact.PactFactory;
 import com.openapi.pact.PactJsonGenerator;
-import com.openapi.pact.Service;
+import com.openapi.pact.Services;
 import com.openapi.pact.model.Pact;
 
 import io.swagger.v3.oas.models.OpenAPI;
@@ -36,19 +36,23 @@ public class PactGenerator {
 
 
     public void writePactFiles(@NotNull OpenAPI oapi,
-                               @NotNull String consumerName) {
-        this.write( oapi, consumerName, null);
+                               @NotNull String consumerName,
+                               @NotNull String producerName,
+                               @NotNull String version) {
+        this.write( oapi, consumerName, producerName,version,null);
     }
 
     public void writePactFiles(@NotNull OpenAPI oapi,
                                @NotNull String consumerName,
+                               @NotNull String producerName,
+                               @NotNull String version,
                                @NotNull File pactFilesDestinationDir) {
-        this.write(oapi, consumerName, pactFilesDestinationDir);
+        this.write(oapi, consumerName,producerName, version,pactFilesDestinationDir);
     }
 
-    private void write(OpenAPI oapi, String consumerName,File pactFilesDestinationDir) {
+    private void write(OpenAPI oapi, String consumerName,String producerName,String version,File pactFilesDestinationDir) {
     	//Generates Pacts
-        Multimap<Service, Pact> providerToPactMap = generatePacts(oapi, consumerName);
+		Multimap<Services, Pact> providerToPactMap = generatePacts(oapi, consumerName, producerName, version);
         List<Pact> pacts = providerToPactMap.keySet().stream()
             .map(providerToPactMap::get)
             .map(this::combinePactsToOne)
@@ -57,28 +61,28 @@ public class PactGenerator {
         pactJsonGenerator.writePactFiles(pactFilesDestinationDir, pacts);
     }
 
-	private Multimap<Service, Pact> generatePacts(OpenAPI oapi, String consumerName) {
-		Multimap<Service, Pact> providerToPactMap = HashMultimap.create();
-		Pact pact = pactFactory.createPacts( oapi,consumerName);
+	private Multimap<Services, Pact> generatePacts(OpenAPI oapi, String consumerName, String producerName,String version) {
+		Multimap<Services, Pact> providerToPactMap = HashMultimap.create();
+		Pact pact = pactFactory.createPacts( oapi,consumerName,producerName,version);
 		providerToPactMap.put(pact.getProvider(), pact);
 		return providerToPactMap;
 	}
 
-    private Pact combinePactsToOne(Collection<Pact> pacts) {
-        if (pacts == null || pacts.isEmpty()) {
-            return null;
-        }
-        Pact referencePact = pacts.iterator().next();
+	private Pact combinePactsToOne(Collection<Pact> pacts) {
+		if (pacts == null || pacts.isEmpty()) {
+			return null;
+		}
+		Pact referencePact = pacts.iterator().next();
 
-        Pact combinedPact = Pact.builder()
-                                .metadata(referencePact.getMetadata())
-                                .consumer(referencePact.getConsumer())
-                                .provider(referencePact.getProvider())
-                                .interactions(new ArrayList<>())
-                                .build();
-        pacts.forEach(pact -> combinedPact.getInteractions().addAll(pact.getInteractions()));
+		Pact combinedPact = Pact.builder()
+				.metadata(referencePact.getMetadata())
+				.consumer(referencePact.getConsumer())
+				.provider(referencePact.getProvider())
+				.interactions(new ArrayList<>())
+				.build();
+		pacts.forEach(pact -> combinedPact.getInteractions().addAll(pact.getInteractions()));
 
-        return combinedPact;
-    }
+		return combinedPact;
+	}
 
 }
