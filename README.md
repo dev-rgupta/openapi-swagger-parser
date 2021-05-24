@@ -36,3 +36,53 @@ pact.verifier.publishResults=true
 I have used below sample files for demo and devlopment
 - https://github.expedia.biz/eg-business-domains/rest-api-definitions/blob/master/definitions/Partner/Management/PartnerAPI/v1beta/openapi.yml
 - https://github.expedia.biz/eg-business-domains/rest-api-definitions/edit/master/definitions/Partner/CapabilitySelection/CapabilitySelectionAPI/v1beta/openapi.yml
+
+## Provider side (java service) changes to verify the pact integration's against implemented API's
+
+In provider service just need to add maven plugin in pom.xml file
+Step 1:
+```xml
+<plugin>
+				<groupId>au.com.dius.pact.provider</groupId>
+				<artifactId>maven</artifactId>
+				<version>4.1.11</version>
+				<configuration>
+					<pactBrokerUrl>https://dev-rgupta.pactflow.io/</pactBrokerUrl>
+					<pactBrokerToken>QoXeUwD8k5OENElS5EuDiA</pactBrokerToken> <!-- Replace TOKEN with the actual token -->
+					<pactBrokerAuthenticationScheme>Bearer</pactBrokerAuthenticationScheme>
+					<serviceProviders>
+						<serviceProvider>
+							<stateChangeUrl>http://localhost:8080/pactStateChange</stateChangeUrl>
+							<name>provider</name>
+						</serviceProvider>
+					</serviceProviders>
+					<configuration>
+						<pact.showStacktrace>true</pact.showStacktrace>
+						<pact.verifier.publishResults>true</pact.verifier.publishResults>
+					</configuration>
+				</configuration>
+			</plugin>
+```
+
+this plugin have some configuration named below
+a: pact broker            ## https://dev-rgupta.pactflow.io/ to pull pact file for verification 
+b: state change Url.      ## http://localhost:8080/pactStateChange
+c: provider name.         ## provider
+d: to publish the result  ## true
+
+
+Step 2:
+
+Provide All API's implementation
+
+Step 3:
+
+provide an extra controller for pactStateChange that has all the providerSatate's (i',m working on that how we can make easy or avoid this step)
+
+Step 4:
+
+execute below maven command to verify the pact against Provider
+
+mvn pact:verify
+
+it will verify the pact and update the results back to broker and mark the status
