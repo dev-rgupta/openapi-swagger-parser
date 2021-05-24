@@ -97,7 +97,7 @@
 					<serviceProviders>
 						<serviceProvider>
 							<stateChangeUrl>http://localhost:8080/pactStateChange</stateChangeUrl>
-							<name>test-provider</name>
+							<name>provider</name>
 						</serviceProvider>
 					</serviceProviders>
 					<configuration>
