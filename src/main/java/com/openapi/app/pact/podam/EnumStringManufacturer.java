@@ -1,4 +1,4 @@
-package com.openapi.app.pact;
+package com.openapi.app.pact.podam;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import uk.co.jemos.podam.api.AttributeMetadata;

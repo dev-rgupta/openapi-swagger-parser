@@ -1,242 +1,247 @@
 openapi: 3.0.0
 info:
-  description: Partner domain APIs v1
-  title: Partner v1 entities
+  description: Partner Signup Workflow APIs v1
+  title: Partner Signup Workflow v1 entities
   version: 'v1beta'
   contact:
     name: "Partner Core Domain Team"
     email: "tbd@expedia.com"
-    url: "https://go/partner-domain"
+    url: "https://confluence.expedia.biz/display/EPACP/Onboarding+Design"
   x-eg-lifecycle: "PLANNED"
-  x-eg-tags: ["partner"]
+  x-eg-tags: ["partner", "workflow", "signup"]
+servers:
+- url: https://tools.us-west-2.test.customer-experience.expediagroup.com/partner-signup-service
+  description: Test
 paths:
-  '/v1/clients':
+  '/v1/workflows':
     post: 
-      summary: "Create a client of the Partner domain"
-      operationId: "create-partner-client"
+      summary: "Workflow for signup completion orchestration"
+      operationId: "create-signup-complete-workflow"
       security:
-        - partnerAuth:
-            - partner.clients.create
+        - signupWorkflowAuth:
+            - partner-signup.complete-workflow.create
       requestBody:
         content: 
           'application/json':
             schema:
-              type: object
-              required:
-                - name
-              properties:
-                name:
-                  type: string
-                partner_id:
-                  type: string
-                  description: "A partner itself can be a client of the Partner domain"
-            example:
-              name: AMEX
+              $ref: "#/components/schemas/Workflow"
       responses:
         '201':
           description: "created"
           content:
             'application/json':
               schema:
-                $ref: "#/components/schemas/PartnerClient"
-  '/v1/clients/{id}/onboarding-workflow':
-    post: 
-      summary: "Create an onboarding workflow"
-      operationId: "create-onboarding-workflow"
+                $ref: "#/components/schemas/Workflow"
+    get:
+      summary: "Get the signup complete workflow"
+      operationId: "get-signup-complete-workflow"
       security:
-        - partnerAuth:
-            - partner.clients-onboarding-workflow.create
+        - signupWorkflowAuth:
+            - partner-signup.complete-workflow.get
       parameters:
-      - name: id
-        in: path
-        required: true
-        description: "Unique identifier for the partner domain client"
-        schema:
-          type: string
-      requestBody:
-        content: 
-          'application/json':
-            schema:
-              type: object
-              required:
-                - name
-              properties:
-                name:
-                  type: string
-            example:
-              name: AMEX
+        - name: tag
+          in: query
+          required: false
+          description: "A tag to lookup the input data for."
+          schema:
+            type: array
+            items:
+              type: string
       responses:
         '201':
-          description: "created"
+          description: "ok"
           content:
             'application/json':
               schema:
-                $ref: "#/components/schemas/PartnerClient"
-  '/v1/clients/{id}/creation-requirements':
-    post: 
-      summary: "Define the partner creation data requirements"
-      operationId: "create-creation-requirements"
+                type: array
+                items:
+                  $ref: "#/components/schemas/Workflow"
+  '/v1/workflows/{id}':
+    put:
+      summary: "Update a workflow"
+      operationId: "update-workflow"
       security:
-        - partnerAuth:
-            - partner.clients-creation-requirements.create
+        - signupWorkflowAuth:
+            - partner-signup.workflow.update
       parameters:
-      - name: id
-        in: path
-        required: true
-        description: "Unique identifier for the partner domain client"
-        schema:
-          type: string
+        - name: id
+          in: path
+          required: true
+          description: "Unique id of the workflow"
+          schema:
+            type: string
       requestBody:
         content: 
           'application/json':
             schema:
-              type: object
-              required:
-                - name
-              properties:
-                name:
-                  type: string
-            example:
-              name: AMEX
+              $ref: "#/components/schemas/Workflow"
       responses:
-        '201':
-          description: "created"
+        '200':
+          description: "Updated"
           content:
             'application/json':
               schema:
-                $ref: "#/components/schemas/PartnerClient"
-  '/v1/clients/{id}/notification-preferences':
-    post: 
-      summary: "Define the partner creation data requirements"
-      operationId: "create-notification-preferences"
-      security:
-        - partnerAuth:
-            - partner.clients-notification-preferences.create
-      parameters:
-      - name: id
-        in: path
-        required: true
-        description: "Unique identifier for the partner domain client"
-        schema:
-          type: string
-      requestBody:
-        content: 
-          'application/json':
-            schema:
-              type: object
-              required:
-                - name
-              properties:
-                name:
-                  type: string
-            example:
-              name: AMEX
-      responses:
-        '201':
-          description: "created"
-          content:
-            'application/json':
-              schema:
-                $ref: "#/components/schemas/PartnerClient"
-  '/v1/clients/{id}/config-schema':
-    post: 
-      summary: "Define the partner configuration schema"
-      operationId: "create-config-schema"
-      security:
-        - partnerAuth:
-            - partner.clients-config-schema.create
-      parameters:
-      - name: id
-        in: path
-        required: true
-        description: "Unique identifier for the partner domain client"
-        schema:
-          type: string
-      requestBody:
-        content: 
-          'application/json':
-            schema:
-              type: object
-              required:
-                - name
-              properties:
-                name:
-                  type: string
-            example:
-              name: AMEX
-      responses:
-        '201':
-          description: "created"
-          headers:
-            x-next:
-              description: A link to the next page of responses
-              schema:
-                type: string
-          content:
-            'application/json':
-              schema:
-                $ref: "#/components/schemas/PartnerClient"
-  '/v1/partners':
+                $ref: "#/components/schemas/Workflow"
+  '/v1/workflows/{id}/executions':
     post:
-      summary: "Create a partner"
-      operationId: "create-partner"
+      summary: "Execute on the specified workflow definition"
+      operationId: "execute-signup-complete-workflow"
       security:
-        - partnerAuth:
-            - partner.partners.create
+        - signupWorkflowAuth:
+            - partner-signup.execute-workflow.create
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: "Unique identifier for the signup complete workflow"
+        schema:
+          type: string
       requestBody:
         content: 
           'application/json':
             schema:
-              type: object
-              required:
-                - name
-                - clientId
-              properties:
-                name:
-                  type: string
-                  description: "Name of the partner to create."
-                parentId:
-                  type: string
-                  description: "Indicates the parent partner entity."
-                clientId:
-                  type: string
-                  description: "Indicates the partner client that this partner is created on behalf of."
-            example:
-              name: AMEX
-              clientId: bbb3b004-3723-406d-be4b-a03cd4bc8d8c
+              $ref: "#/components/schemas/ExecuteRequest"
       responses:
         '201':
           description: "created"
           content:
             'application/json':
               schema:
-                $ref: "#/components/schemas/Partner"
-          
+                $ref: '#/components/schemas/Execution'
+  '/v1/executions':
     get:
-      summary: "Get all partners"
-      operationId: "get-partners"
+      summary: "Get executions"
+      operationId: "get-executions"
       security:
-        - partnerAuth:
-            - partner.partners.read
+        - signupWorkflowAuth:
+            - partner-signup.executions.get
       responses:
         '200':
-          description: "successful operation"
+          description: "OK"
           content:
             'application/json':
               schema:
-                $ref: "#/components/schemas/Partners"
-  '/v1/partners/{id}/accounts':
+                type: array
+                items:
+                  $ref: '#/components/schemas/Execution'
+  '/v1/executions/{id}':
+    get:
+      summary: "Get executions by id"
+      operationId: "get-executions-by-id"
+      security:
+        - signupWorkflowAuth:
+            - partner-signup.execution-by-id.get
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: "Unique identifier for execution"
+        schema:
+          type: string
+      responses:
+        '200':
+          description: "OK"
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/Execution'
+  '/v1/actions':
+    post: 
+      summary: "Create an action"
+      operationId: "create-action"
+      description: "TODO: maybe this should be its own resource, actions can be reused across workflows."
+      security:
+        - signupWorkflowAuth:
+            - partner-signup.actions.create
+      requestBody:
+        content: 
+          'application/json':
+            schema:
+              $ref: '#/components/schemas/Action'
+      responses:
+        '201':
+          description: "created"
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/Action'
+    get:
+      summary: "Get actions"
+      operationId: "get-actions"
+      description: "Get actions"
+      security:
+        - signupWorkflowAuth:
+            - partner-signup.actions.get
+      responses:
+        '200':
+          description: "OK"
+          content:
+            'application/json':
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Action'
+  '/v1/actions/{id}':
+    get:
+      summary: "Get action by id"
+      operationId: "get-action-by-id"
+      description: "Get action by id"
+      security:
+        - signupWorkflowAuth:
+            - partner-signup.action.get
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: "Unique identifier for the action"
+        schema:
+          type: string
+      responses:
+        '200':
+          description: "OK"
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/Action'
+    put:
+      summary: "Update an action"
+      operationId: "update-action"
+      description: "TODO: maybe this should be its own resource, actions can be reused across workflows."
+      security:
+        - signupWorkflowAuth:
+            - partner-signup.actions.update
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: "Unique identifier for the action"
+        schema:
+          type: string
+      requestBody:
+        content: 
+          'application/json':
+            schema:
+              $ref: '#/components/schemas/Action'
+      responses:
+        '200':
+          description: "Updated"
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/Action'
+  '/v1/workflows/{id}/graphs':
     post:
-      summary: "Create a partner account to organize access controls and configurations at a more granular level."
-      operationId: "create-partner-account"
+      summary: "Create a new graph for the signup complete workflow"
+      operationId: "create-signup-complete-workflow-graph"
+      description: "Can only associate one graph with the workflow"
       security:
-        - partnerAuth:
-            - partner.partners-accounts.create
+        - signupWorkflowAuth:
+            - partner-signup.complete-workflow-graph.create
       parameters:
       - name: id
         in: path
         required: true
-        description: "Unique identifier for the partner"
+        description: "Unique identifier for the signup complete workflow"
         schema:
           type: string
       requestBody:
@@ -247,208 +252,314 @@ paths:
               required:
                 - name
               properties:
-                name:
-                  type: string
-                parent_id:
-                  type: string
-            example:
-              name: Chase Freedom Test
+                action:
+                  $ref: '#/components/schemas/Graph'
       responses:
         '201':
           description: "created"
           content:
             'application/json':
               schema:
-                $ref: "#/components/schemas/PartnerAccount"
-    get:
-      summary: "Get all partner accounts for a partner."
-      operationId: "get-partner-accounts"
+                $ref: '#/components/schemas/Graph'
+  '/v1/workflows/{workflow_id}/graphs/{graph_id}/edges':
+    post:
+      summary: "Create an edge for the graph of signup complete workflow"
+      operationId: "create-signup-complete-workflow-edge"
       security:
-        - partnerAuth:
-            - partner.partners-accounts.read
+        - signupWorkflowAuth:
+            - partner-signup.complete-workflow-edge.create
       parameters:
-      - name: id
+      - name: workflow_id
         in: path
         required: true
-        description: "Unique identifier for the partner"
+        description: "Unique identifier for the signup complete workflow"
         schema:
           type: string
-      - name: include_children
-        in: query
-        description: "Also include accounts under all partner children of specified partner"
+      - name: graph_id
+        in: path
+        required: true
+        description: "Unique identifier for the graph of the signup complete workflow"
         schema:
-          type: boolean
+          type: string
+      requestBody:
+        content: 
+          'application/json':
+            schema:
+              type: object
+              required:
+                - name
+              properties:
+                action:
+                  $ref: '#/components/schemas/Edge'
       responses:
-        '200':
-          description: "OK"
+        '201':
+          description: "created"
           content:
             'application/json':
               schema:
-                $ref: "#/components/schemas/PartnerAccounts"          
-  '/v1/partners/{partner_id}/accounts/{account_id}':
-    get:
-      summary: "Get a partner account for a partner."
-      operationId: "get-partner-account"
+                $ref: '#/components/schemas/Edge'
+  '/v1/workflows/{workflow_id}/graphs/{graph_id}/nodes':
+    post:
+      summary: "Create a node for the graph of signup complete workflow"
+      operationId: "create-signup-complete-workflow-node"
       security:
-        - partnerAuth:
-            - partner.partners-accounts.read
+        - signupWorkflowAuth:
+            - partner-signup.complete-workflow-node.create
       parameters:
-      - name: partner_id
+      - name: workflow_id
         in: path
         required: true
-        description: "Unique identifier for the partner"
+        description: "Unique identifier for the signup complete workflow"
         schema:
           type: string
-      - name: account_id
+      - name: graph_id
         in: path
         required: true
-        description: "Unique identifier for the partner account id"
+        description: "Unique identifier for the graph of the signup complete workflow"
         schema:
           type: string
+      requestBody:
+        content: 
+          'application/json':
+            schema:
+              type: object
+              required:
+                - name
+              properties:
+                action:
+                  $ref: '#/components/schemas/Node'
       responses:
-        '200':
-          description: "OK"
+        '201':
+          description: "created"
           content:
             'application/json':
               schema:
-                $ref: "#/components/schemas/PartnerAccount"   
-  '/v1/partners/{partner_id}/accounts/{account_id}/capabilities':
-    get:
-      summary: "Get all capabilities that the partner account has signed up for."
-      operationId: "get-partner-account-capabilities"
-      security:
-        - partnerAuth:
-            - partner.partners-account-capabilities.read
-      parameters:
-      - name: partner_id
-        in: path
-        required: true
-        description: "Unique identifier for the partner"
-        schema:
-          type: string
-      - name: account_id
-        in: path
-        required: true
-        description: "Unique identifier for the partner account id"
-        schema:
-          type: string
-      responses:
-        '200':
-          description: "OK"
-          content:
-            'application/json':
-              schema:
-                $ref: "#/components/schemas/Capabilities"
+                $ref: '#/components/schemas/Node'
 components:
   schemas:
-    PartnerClient:
+    Workflow:
       type: object
-      required:
-        - id
       properties:
         id:
           type: string
-    Partner:
-      type: object
-      required:
-        - id
-        - name
-        - type
-      properties:
-        id:
-          description: "Partner uuid"
-          example: "5423694-018a-43ca-8879-295e4efa58b4"
+          description: "Unique identifier for the requirements"
+          example: "ad0cf931-43a7-4b5b-8b4f-fac450c67646"
+        name: 
           type: string
-        name:
-          description: "Partner name"
-          example: "Chase"
+          description: "Human readable name for the workflow"
+        description: 
           type: string
-        type:
-          description: "Partner type"
-          example: "Organization"
+          description: "Description of the workflow"
+        tags:
           type: string
-        legacyId:
-          description: "A legacy identifier for the Partner"
-          example: "1"
-          type: string
-        legacyIdType:
-          description: "Legacy identifier type for the Partner"
-          type: string
-          enum: ["tpid"]
-        parentPartnerId:
-          description: "Part of the Partner hierarchy. If null, it is the root Partner."
-          type: string
-        partnerAccounts:
+          description: "Tag for the input data"
+          example: "partner-signup"
+          items:
+            type: string
+        actions:
           type: array
           items:
-            $ref: '#/components/schemas/PartnerAccount'
-    Partners:
-      type: array
-      items:
-        $ref: '#/components/schemas/Partner'
-    PartnerAccount:
+            $ref: '#/components/schemas/Action'
+        graph:
+          $ref: '#/components/schemas/Graph'
+    Action:
       type: object
       required:
-        - id
-        - name 
-      properties:
-        id:
-          description: "Partner Account uuid"
-          example: "5423694-018a-43ca-z1fd-295e4efa58b4"
-          type: string
-        name:
-          description: "Name of the Partner Account. The default Partner Account is named 'default'."
-          example: "Test Account"
-          type: string
-        userAccounts: 
-          $ref: '#/components/schemas/UserAccounts'
-        capabilities:
-          $ref: '#/components/schemas/Capabilities'
-    PartnerAccounts:
-      type: array
-      items:
-        $ref: '#/components/schemas/PartnerAccount'
-    Capability:
-      type: object
-      required:
-        - id
+        - description
+        - protocol
         - name
       properties:
         id:
-          description: "Capability uuid"
+          type: string
+          description: "Unique identifier for the requirements"
+          example: "373a4862-c029-4d53-8412-2dcfae432416"
+          readOnly: true
         name:
-          description: "Name of the Capability"
-    Capabilities:
-      type: array
-      description: "Set of capabilities the Partner have signed up for"
-      items:
-        $ref: '#/components/schemas/Capability'
-    UserAccount:
+          type: string
+          description: "Human readable identifier for the action"
+        description: 
+          type: string
+          description: "Description of the action"
+          example: "Partner Information"
+        protocol:
+          type: string
+          description: "Protocol action. Todo: change this to oneOf "
+          example: "http"
+          enum: ["http"]
+        http_protocol:
+          type: string
+          description: "If protocol is http, this defines which http protocol to perform action as."
+          example: "get"
+          enum: ["get", "post", "put", "patch"]
+        url:
+          type: string
+          description: "Url of the HTTP protocol"
+          example: "https://api.expediagroup.com/partners"
+        http_success_code:
+          type: number
+          description: "Which HTTP status code indicates success."
+          example: 200
+        use_plugin_for_complex_body_mapping:
+          type: boolean
+          description: "Set this flag to indicate you would like to create a plugin to perform a complex body mapping"
+          example: false
+        param_fields:
+          type: array
+          description: ""
+          items:
+            type: object
+            properties:
+              param_field_name:
+                type: string
+              param_field_value:
+                $ref: '#/components/schemas/FieldValue'
+        path_fields:
+          type: array
+          items:
+            type: object
+            properties:
+              path_field_name:
+                type: string
+              path_field_value:
+                $ref: '#/components/schemas/FieldValue'
+        body_fields:
+          type: array
+          description: "This is used for simple flat object, not meant for complex."
+          items:
+            type: object
+            properties:
+              body_field_name:
+                type: string
+              body_field_value:
+                oneOf:
+                - $ref: '#/components/schemas/FieldValue'
+                - type: array
+                  items:
+                    $ref: '#/components/schemas/FieldValue'
+    FieldValueFromSavedInput:
+      type: object
+      description: "Field value is determined from saved input from the input APIs"
+      properties:
+        field_id: 
+          type: string
+    FieldValueFromHardcode:
+      type: object
+      description: "Hardcoded value"
+      properties:
+        hardcoded_value: 
+          type: string
+    FieldValueFromAction:
+      type: object
+      properties:
+        action_id:
+          type: string
+          description: "Which action to get the JSON response from"
+        json_path:
+          type: string
+          description: "jsonpath to get the response from the specified action"
+    FieldValue:
+      type: object
+      description: "Instructions on how to populate the field value"
+      oneOf:
+        - $ref: "#/components/schemas/FieldValueFromSavedInput"
+        - $ref: "#/components/schemas/FieldValueFromAction"
+        - $ref: "#/components/schemas/FieldValueFromHardcode"
+    Graph:
       type: object
       required:
-        - id
+        - start_node
+        - nodes
+      properties:
+        id:
+          type: string
+          description: "Uuid of the field"
+          example: "eacaf909-58c5-445f-94a8-c6b6d5ecfdd0"
+        start_node:
+          type: string
+          description: "Unique id of the node to begin the workflow graph with."
+        nodes:
+          type: array
+          description: "List of nodes in the workflow graph"
+          items:
+            $ref: '#/components/schemas/Node'
+        edges:
+          type: array
+          description: "List of edges in the workflow graph"
+          items:
+            $ref: '#/components/schemas/Edge'
+    Node:
+      type: object
+      required:
+        - action_ids
+        - name
+      properties:
+        id:
+          type: string
+          readOnly: true
+        name:
+          type: string
+          description: "Name of the node to reference in Edge definitions"
+          example: "create-partner"
+        action_ids:
+          type: array
+          items:
+            type: string
+    Edge:
+      type: object
+      required:
+        - on_success
+        - on_failure
+        - parent
+      properties:
+        id:
+          type: string
+          description: "Unique id of the edge"
+        on_success:
+          type: string
+          description: "Name of the node to move on to upon success."
+        on_failure:
+          type: string
+          description: "Name of the node to move on to upon failure."
+        parent:
+          type: string
+          description: Name of the node that either succeeded or failed."
+    ExecuteRequest:
+      type: object
+      description: "Execute request"
+      properties:
+        session_id:
+          type: string
+          description: "Unique session id for the workflow to execute upon."
+    Execution:
+      type: object
+      description: "TODO: describe this out more"
       properties:
         id: 
           type: string
-    UserAccounts:
-      type: array
-      items:
-        $ref: '#/components/schemas/UserAccount'
-
+          description: "Unique id of the execution"
+        status:
+          type: string
+          description: "temp status string"
   securitySchemes:
-    partnerAuth:
+    signupWorkflowAuth:
       type: oauth2
       flows:
         clientCredentials:
           tokenUrl: /oauth/token?grant_type=client_credentials
           scopes:
-            partner.clients.create: Create a client of the Partner domain
-            partner.clients-onboarding-workflow.create: Create an onboarding workflow
-            partner.clients-creation-requirements.create: Define the partner creation data requirements
-            partner.clients-notification-preferences.create: Define the partner creation data requirements
-            partner.clients-config-schema.create: Define the partner configuration schema
-            partner.partners.create: Create a partner
-            partner.partners.read: Read all partners
-            partner.partners-accounts.create: Create a partner account to organize access controls and configurations at a more granular level
-            partner.partners-accounts.read: Read partner accounts for a partner
-            partner.partners-account-capabilities.read: Get all capabilities that the partner account has signed up for
+            partner-signup.complete-workflow.get: Get a workflow for the signup completion
+            partner-signup.workflow.update: Update a workflow
+            partner-signup.complete-workflow.create: Create a workflow for the signup completion
+            partner-signup.complete-workflow-actions.create: Create an action for the workflow for the signup completion
+            partner-signup.complete-workflow-edge.create: Create an edge for the workflow for the signup completion
+            partner-signup.complete-workflow-node.create: Create a node for the workflow for the signup completion
+            partner-signup.complete-workflow-graph.create: Create a graph for the workflow for the signup completion
+            partner-signup.action.get: Get action by id
+            partner-signup.actions.get: Get actions
+            partner-signup.actions.update: Update action
+            partner-signup.executions.get: Get executions
+            partner-signup.execution-by-id.get: Get execution by id
+           
+
+      
+  

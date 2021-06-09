@@ -50,11 +50,11 @@
 		</dependency>
 
 		<!-- https://mvnrepository.com/artifact/au.com.dius.pact.provider/junit5spring -->
-		<dependency>
-			<groupId>au.com.dius.pact.provider</groupId>
-			<artifactId>junit5spring</artifactId>
-			<version>4.2.5</version>
-		</dependency>
+<!-- 		<dependency> -->
+<!-- 			<groupId>au.com.dius.pact.provider</groupId> -->
+<!-- 			<artifactId>junit5spring</artifactId> -->
+<!-- 			<version>4.2.5</version> -->
+<!-- 		</dependency> -->
 
 		<!-- <dependency> -->
 		<!-- <groupId>au.com.dius.pact.provider</groupId> -->

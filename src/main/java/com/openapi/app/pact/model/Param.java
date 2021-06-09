@@ -10,5 +10,6 @@ public class Param {
     private final String name;
     private final String type;
     private final Class<?> genericArgumentType;
-    private final Object defaultValue;
+    private final Object childNode;
+    private final String ref;
 }

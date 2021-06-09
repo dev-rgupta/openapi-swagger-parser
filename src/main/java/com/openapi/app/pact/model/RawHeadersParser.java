@@ -18,7 +18,7 @@ public final class RawHeadersParser {
     private static Param parse(String[] stringHeaderArray) {
         return Param.builder()
             .name(stringHeaderArray[0])
-            .defaultValue(stringHeaderArray[1])
+            .childNode(stringHeaderArray[1])
             .build();
     }
 }

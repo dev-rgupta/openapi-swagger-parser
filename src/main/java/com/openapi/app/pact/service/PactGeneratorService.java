@@ -31,12 +31,13 @@ public class PactGeneratorService  implements CommandLineRunner   {
 			ParseOptions parseOptions = new ParseOptions();
 			parseOptions.setResolve(true);
 			parseOptions.setResolveFully(true);
-			parseOptions.setResolveCombinators(true);
+			parseOptions.setResolveCombinators(false);
 			SwaggerParseResult result = new OpenAPIV3Parser().readLocation(resourcePath, null, parseOptions);
 			OpenAPI openAPI = result.getOpenAPI();
+			//log.info("--- openAPI ---" + openAPI.getPaths().toString());
 			pactGenerator.writePactFiles(openAPI, consumerName, providerName,pactSpecificationVersion, new File("target/pacts/"));
-			// logger.info("--- openAPI ---" + openAPI.toString());
 		} catch (IllegalArgumentException e) {
+			e.printStackTrace();
 			log.error(String.format("%s is not a file or is an invalid URL", resourcePath), Color.RED);
 		} catch (NullPointerException e) {
 			e.printStackTrace();
@@ -54,7 +55,7 @@ public class PactGeneratorService  implements CommandLineRunner   {
 		try {
 			validateArgs(this);
 			generatePactFromOpenAPI(resourcePath, consumerName, providerName, pactSpecificationVersion);
-			log.info("######## pact file generated in 'target/pacts' directory and uploaded to pact Broker ########");
+			log.info("######## pact file generated in 'target/pacts' directory ########");
 		} catch (Exception e) {
 			log.info(":::: Something went wrong Error Message is :::: " + e.getMessage());
 			//log.error(":::: Something Went wrong Error Stack Trace ::::" + e);

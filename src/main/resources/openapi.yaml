@@ -1,178 +1,767 @@
 openapi: 3.0.0
 info:
-  description: Partner Capability Selection APIs v1
-  title: Partner Capability Selection v1 entities
+  description: Partner Signup APIs v1
+  title: Partner Signup v1 entities
   version: 'v1beta'
   contact:
     name: "Partner Core Domain Team"
     email: "tbd@expedia.com"
-    url: "https://go/partner-domain"
+    url: "https://confluence.expedia.biz/display/EPACP/Onboarding+Design"
   x-eg-lifecycle: "PLANNED"
-  x-eg-tags: ["partner", "capability", "domain", "selection", "register"]
+  x-eg-tags: ["partner", "partner signup"]
+servers:
+- url: https://tools.us-west-2.test.customer-experience.expediagroup.com/partner-signup-service
+  description: Test
 paths:
-  '/v1/register-domain':
-    post: 
-      summary: "Register a domain for capability selection. Some requirements are at a 'first capability selection' which will live at the domain level."
-      operationId: "register-domain"
+  '/v1/fetch-and-save':
+    post:
+      summary: "Fetch the next set of input data and optionally save the current set of input data"
+      operationId: "fetch-and-save"
       security:
-        - partnerCapabilitySelectionAuth:
-            - partner-capability-selection.register-domain.create
+        - partnerSignupAuth:
+            - partner-signup.fetch-and-save.post
       requestBody:
-        content:
+        content: 
           'application/json':
             schema:
-              $ref: "#/components/schemas/DomainRegistrationRequest"
+              $ref: "#/components/schemas/FetchAndSaveRequest"
       responses:
         '200':
           description: "OK"
-  '/v1/register-capabilities':
-    post: 
-      summary: "Register capabilities for capability selection."
-      operationId: "register-capabilities"
+          content:
+            'application/json':
+              schema:
+                $ref: "#/components/schemas/FetchAndSaveResponse"
+  '/v1/submit':
+    post:
+      summary: "Submit the input data"
+      operationId: "submit"
       security:
-        - partnerCapabilitySelectionAuth:
-            - partner-capability-selection.register-capabilities.create
+        - partnerSignupAuth:
+            - partner-signup.submit.post
       requestBody:
-        content:
+        content: 
           'application/json':
             schema:
-              $ref: "#/components/schemas/CapabilitiesRegistrationRequest"
+              $ref: "#/components/schemas/FetchAndSaveRequest"
       responses:
         '200':
           description: "OK"
-  '/v1/retrieve-product-catalog':
+          content:
+            'application/json':
+              schema:
+                type: object
+                properties:
+                  workflow_id:
+                    type: string
+                    description: "Workflow responsible for executing the sign up"
+                  execution_id:
+                    type: string
+                    description: "Unique identifier for the execution itself to poll when the signup is completed"
+  '/v1/input-data-set':
+    post: 
+      summary: "Create a set of input data"
+      operationId: "create-input-data-set"
+      security:
+        - partnerSignupAuth:
+            - partner-signup.input-data-set.create
+      requestBody:
+        content: 
+          'application/json':
+            schema:
+              $ref: "#/components/schemas/InputDataSet"
+      responses:
+        '201':
+          description: "created"
+          content:
+            'application/json':
+              schema:
+                $ref: "#/components/schemas/InputDataSet"
     get:
-      summary: "Get the full product catalog tailored for the partner."
-      operationId: "retrieve-product-catalog"
+      summary: "Get the input data sets"
+      operationId: "get-input-data-sets"
       security:
-        - partnerCapabilitySelectionAuth:
-            - partner-capability-selection.retrieve-product-catalog.get
+        - partnerSignupAuth:
+            - partner-signup.input-data-sets.get
+      responses:
+        '200':
+          description: "ok"
+          content:
+            'application/json':
+              schema:
+                 $ref: "#/components/schemas/InputDataSet"
+  '/v1/input-data-set/{id}':
+    put: 
+      summary: "Update a set of input data"
+      operationId: "update-input-data-set"
+      security:
+        - partnerSignupAuth:
+            - partner-signup.input-data-set.update
       parameters:
-        - name: partner_account_id
+      - name: id
+        in: path
+        required: true
+        description: "Unique identifier for the input data set"
+        schema:
+          type: string
+      responses:
+        '200':
+          description: "updated"
+          content:
+            'application/json':
+              schema:
+                $ref: "#/components/schemas/InputDataSet"
+    get: 
+      summary: "Get a set of input data"
+      operationId: "get-input-data-set"
+      security:
+        - partnerSignupAuth:
+            - partner-signup.input-data-set.get
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: "Unique identifier for the input data set"
+        schema:
+          type: string
+      responses:
+        '201':
+          description: "created"
+          content:
+            'application/json':
+              schema:
+                $ref: "#/components/schemas/InputDataSet"
+  '/v1/input-data':
+    get:
+      summary: "Get the signup input data"
+      operationId: "get-signup-input-data"
+      security:
+        - partnerSignupAuth:
+            - partner-signup.input-data.get
+      parameters:
+        - name: tag
           in: query
-          description: "Unique id for the partner account"
-          example: a71198ab-a593-490a-b639-0377b3733c41
+          required: false
+          description: "A tag to lookup the input data for."
+          schema:
+            type: array
+            items:
+              type: string
+      responses:
+        '200':
+          description: "OK"
+          content:
+            'application/json':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/InputData"
+    post: 
+      summary: "Create a signup input data"
+      operationId: "create-signup-input-data"
+      security:
+        - partnerSignupAuth:
+            - partner-signup.input-data.create
+      requestBody:
+        content: 
+          'application/json':
+            schema:
+              $ref: "#/components/schemas/InputData"
+      responses:
+        '201':
+          description: "created"
+          content:
+            'application/json':
+              schema:
+                $ref: "#/components/schemas/InputData"
+              example:
+                id: "57cb35af-5024-4dca-ad42-770890c30faa"
+                sections: [{
+                  id: "00d903d1-d2a6-4443-a0ab-c3b53efe6941",
+                  order: 1,
+                  displayName: "Partner Information",
+                  fields: [{
+                      id: "1366c2af-aeaf-4bda-8a9f-6ac8002a7f9c",
+                      order: 1,
+                      isRequired: true,
+                      type: "string",
+                      displayName: "Partner Name",
+                      paramName: "partner_name"
+                    },
+                    {
+                      id: "0832ff7a-c296-490f-893d-95a00b731849",
+                      order: 2,
+                      isRequired: true,
+                      type: "string",
+                      displayName: "Email Address",
+                      paramName: "email_address"
+                    },
+                    {
+                      id: "5f633ef4-2d33-4d6c-9de0-1db7818fa089",
+                      order: 3,
+                      isRequired: true,
+                      type: "integer",
+                      displayName: "Company Size",
+                      paramName: "company_size"
+                    },
+                    {
+                      id: "6406cce7-a595-4b84-ac6f-ce027f0238b6",
+                      order: 3,
+                      isRequired: true,
+                      type: "options",
+                      displayName: "What best describes you?",
+                      paramName: "description",
+                      options: [{
+                        value: "developer",
+                        displayValue: "Developer"
+                      }, 
+                      {
+                        value: "supplyProvider",
+                        displayValue: "Supply Provider"
+                      }]
+                    }]
+                }]
+  '/v1/input-data/{input_data_id}':
+    put:
+      summary: "Update input data"
+      operationId: "update-input-data"
+      security:
+        - partnerSignupAuth:
+            - partner-signup.input-data.update
+      parameters:
+        - name: input_data_id
+          in: path
+          required: true
+          description: "Unique identifier for input data."
+          schema:
+            type: string
+      requestBody:
+        content: 
+          'application/json':
+            schema:
+              $ref: "#/components/schemas/InputData"
+      responses:
+        '200':
+          description: "Updated"
+          content:
+            'application/json':
+              schema:
+                $ref: "#/components/schemas/InputData"
+  '/v1/input-data/{input_data_id}/sections':
+    post: 
+      summary: "Create a section in the input-data"
+      operationId: "create-input-data-section"
+      security:
+        - partnerSignupAuth:
+            - partner-signup.input-data-section.create
+      parameters:
+      - name: input_data_id
+        in: path
+        required: true
+        description: "Unique identifier for the input data"
+        schema:
+          type: string
+      requestBody:
+        content: 
+          'application/json':
+            schema:
+              $ref: "#/components/schemas/Section"
+      responses:
+        '201':
+          description: "created"
+          content:
+            'application/json':
+              schema:
+                $ref: "#/components/schemas/Sections"
+    delete:
+      summary: "Delete all sections from the input-data"
+      operationId: "delete-input-data-sections"
+      security:
+        - partnerSignupAuth:
+            - partner-signup.input-data-sections.delete
+      parameters:
+      - name: input_data_id
+        in: path
+        required: true
+        description: "Unique identifier for the input data"
+        schema:
+          type: string
+      responses:
+        '200':
+          description: "deleted"
+  '/v1/input-data/{input_data_id}/sections/{section_id}':
+    put:
+      summary: "Update a section"
+      operationId: "update-input-data-section"
+      description: "Replaces the existing section with the new section request"
+      security:
+        - partnerSignupAuth:
+            - partner-signup.input-data-section.update
+      parameters:
+      - name: input_data_id
+        in: path
+        required: true
+        description: "Unique identifier for the input data"
+        schema:
+          type: string
+      - name: section_id
+        in: path
+        required: true
+        description: "Unique identifier for the section"
+        schema:
+          type: string
+      requestBody:
+        content: 
+          'application/json':
+            schema:
+              $ref: "#/components/schemas/Section"
+      responses:
+        '200':
+          description: "deleted"
+    delete:
+      summary: "Delete a section from the input-data"
+      operationId: "delete-input-data-section"
+      security:
+        - partnerSignupAuth:
+            - partner-signup.input-data-section.delete
+      parameters:
+      - name: input_data_id
+        in: path
+        required: true
+        description: "Unique identifier for the input data"
+        schema:
+          type: string
+      - name: section_id
+        in: path
+        required: true
+        description: "Unique identifier for the section"
+        schema:
+          type: string
+      responses:
+        '200':
+          description: "deleted"
+  '/v1/input-data/{input_data_id}/sections/{section_id}/fields':
+    post: 
+      summary: "Add a field for this section in the input-data"
+      operationId: "create-input-data-section-fields"
+      description: "TODO: This may be extracted into its own API, i think fields should be unique across the system (by param_name) but i dont know right now..."
+      security:
+        - partnerSignupAuth:
+            - partner-signup.input-data-section-fields.create
+      parameters:
+      - name: input_data_id
+        in: path
+        required: true
+        description: "Unique identifier for the input data"
+        schema:
+          type: string
+      - name: section_id
+        in: path
+        required: true
+        description: "Unique identifier for the section"
+        schema:
+          type: string
+      - name: field_id
+        in: query
+        required: false
+        description: "Unique identifier for the field adding to this section"
+        schema:
+          type: string
+      responses:
+        '201':
+          description: "created"
+          content:
+            'application/json':
+              schema:
+                $ref: "#/components/schemas/Fields"
+    delete: 
+      summary: "Remove a field from this section in the input-data"
+      operationId: "delete-input-data-section-fields"
+      description: "TODO: This may be extracted into its own API, i think fields should be unique across the system (by param_name) but i dont know right now..."
+      security:
+        - partnerSignupAuth:
+            - partner-signup.input-data-section-fields.create
+      parameters:
+      - name: input_data_id
+        in: path
+        required: true
+        description: "Unique identifier for the input data"
+        schema:
+          type: string
+      - name: section_id
+        in: path
+        required: true
+        description: "Unique identifier for the section"
+        schema:
+          type: string
+      - name: field_id
+        in: query
+        required: false
+        description: "Unique identifier for the field adding to this section"
+        schema:
+          type: string
+      responses:
+        '200':
+          description: "OK"
+  '/v1/input-data/{input_data_id}/save':
+    post:
+      summary: "Save the data that the partner signed up with"
+      operationId: "save-signup-input-data"
+      security:
+        - partnerSignupAuth:
+            - partner-signup.input-data.save
+      parameters:
+        - name: input_data_id
+          in: path
+          required: true
+          description: "Unique identifier for the input data"
+          schema:
+            type: string
+      requestBody:
+        content: 
+          'application/json':
+            schema:
+              type: object
+              required:
+                - session_id
+              properties:
+                session_id:
+                  type: string
+                  description: "Some session id we've determined to uniquely identify the client."
+                  example: "96441b7c-9bb7-42f2-85e4-9681cc97902b"
+                field_values:
+                  $ref: '#/components/schemas/FieldValues'
+      responses:
+        '200':
+          description: "Saved"
+  '/v1/saved-input-data/{session_id}':
+    get:
+      summary: "Get the saved signup input data"
+      operationId: "get-saved-input-data"
+      security:
+        - partnerSignupAuth:
+            - partner-signup.saved-input-data.get
+      parameters:
+        - name: session_id
+          in: path
+          required: true
+          description: "Unique identifier for the session to get all the input data for"
+          schema:
+            type: string
+        - name: input_data_id
+          in: query
+          required: false
+          description: "Filter also by the input data id"
           schema:
             type: string
       responses:
         '200':
           description: "OK"
+          content:
+            'application/json':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SavedInputData"
+  '/v1/fields':
+    post:
+      summary: "Create field."
+      operationId: "create-fields"
+      security:
+        - partnerSignupAuth:
+            - partner-signup.fields.create
+      requestBody:
+        content: 
+          'application/json':
+            schema:
+              $ref: '#/components/schemas/Field'
+      responses:
+        '200':
+          description: "OK"
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/Field'
+    get:
+      summary: "Search for fields."
+      operationId: "get-fields"
+      security:
+        - partnerSignupAuth:
+          - partner-signup.fields.get
+      parameters:
+        - name: param_name
+          in: query
+          required: false
+          description: "Param name of the field to search for"
+          schema:
+            type: string
+      responses:
+        '200':
+          description: "OK"
+          content:
+            'application/json':
+              schema:
+               $ref: '#/components/schemas/Fields'
+  '/v1/fields/{field_id}':
+    get:
+      summary: "get a particular field"
+      operationId: "get-field-by-id"
+      security:
+        - partnerSignupAuth:
+          - partner-signup.field.get
+      parameters:
+        - name: field_id
+          in: path
+          required: true
+          description: "Unique identifier for the field"
+          schema:
+            type: string
+      responses:
+        '200':
+          description: "OK"
+          content:
+            'application/json':
+              schema:
+               $ref: '#/components/schemas/Field'
+    put: 
+      summary: "Update field."
+      operationId: "update-field"
+      security:
+        - partnerSignupAuth:
+            - partner-signup.field.update
+      parameters:
+        - name: field_id
+          in: path
+          required: true
+          description: "Unique identifier for the field"
+          schema:
+            type: string
+      requestBody:
+        content: 
+          'application/json':
+            schema:
+              $ref: '#/components/schemas/Field'
+      responses:
+        '200':
+          description: "OK"
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/Field'
 components:
   schemas:
-    DomainRegistrationRequest:
+    FetchAndSaveRequest:
       type: object
-      required: 
-        - domainId
-        - isOpenToPublic
-        - partnerPersonas
+      description: "Fetch and save the current set of input data fields. It's acceptable for this to be the first fetch and not have anything to save."
+      required:
+        - inputDataSetId
+        - sessionId
       properties:
-        domainId:
+        session_id:
           type: string
-          description: "Unique id for the domain"
-          example: 475794b5-4701-4c38-86cb-ed55c474c992
-        isOpenToPublic:
-          type: boolean
-          description: "Is the domain and all its capabilities open to public. If 'true', it will override whatever setting the individual capabilities have."
-          example: false
-          default: false
-        partnerRequirement:
-          type: array
-          description: "Optionally register the PartnerRequirement while registering the domain"
-          items:
-          $ref: '#/components/schemas/PartnerRequirement'
-        configuratons:
-          type: array
-          description: "TODO: set of configuration schemas that all partners get by default when they select the domain."
-          items:
-            type: string
-        capabilityRegistrationRequests:
-          type: array
-          description: "Optionally register the capabilities while registering the domain"
-          items:
-            $ref: "#/components/schemas/CapabilitiesRegistrationRequest"
-    CapabilitiesRegistrationRequest:
-      type: object
-      required: 
-        - domainId
-        - isOpenToPublic
-      properties:
-        domainId:
+          description: "Some session id we've determined to uniquely identify the client."
+          example: "96441b7c-9bb7-42f2-85e4-9681cc97902b"
+        input_data_set_id: 
           type: string
-          description: "Unique id for the domain"
-          example: 36005fb5-f2ce-44de-aa1a-cf222950df09
-        capabilities:
-          type: array
-          items:
-            properties:
-              capabilityId: 
-                type: string
-                description: "Unique id for the capability"
-                example: 36005fb5-f2ce-44de-aa1a-cf222950df09
-              isOpenToPublic:
-                type: boolean
-                description: "Is the capability open to public."
-                example: false
-                default: false
-              configuratons:
-                type: array
-                description: "TODO: set of configuration schemas that all partners get by default when selecting the capability."
-                items:
-                  type: string
-    PartnerRequirement:
-      type: object
-      properties:
-        partnerPersonas:
-          type: array
-          description: "List of partner personas the domain is available to.  TODO: provide URL to get the partner persona types. TODO: should partner personas tailor the capabilities too?"
-          example: ["supply", "developer"]
-          items:
-            type: string
-        partnerTier:
+          description: "Input data set for which we are fetching and saving for. This also determines the orchestration plugin to be used."
+        input_data_id:
           type: string
-          description: "TODO: define partner Tier"
-        partnerStandingStatus:
-          type: string
-          description: "TODO: define partner standing status"
-    RetrieveProductCatalogResponse:
+          description: "Which input data form is this tied to"
+        field_values:
+          $ref: '#/components/schemas/FieldValues'
+    FetchAndSaveResponse:
       type: object
       required:
-        - domains
+        - input_data
+        - is_last_set
       properties:
-         domains: 
-            type: array
-            description: "Retrieve the set of domains & capabilities."
-            items:
-              $ref: '#/components/schemas/Domain'
-    Domain:
+        input_data:
+          $ref: '#/components/schemas/InputData'
+        is_last_set:
+          type: boolean
+          description: "Indicates this is the last set of input data and the next call should be to execute the signup workflow."
+    InputDataSet:
       type: object
+      properties:
+        input_data:
+          type: array
+          items:
+            $ref: '#/components/schemas/InputData'
+        id:
+          type: string
+          readOnly: true
+        name:
+          type: string
+        description:
+          type: string
+        tags:
+          type: string
+          description: "Tag for the input data"
+          example: "partner-general-information"
+        default_submit_workflow_id:
+          type: string
+          description: "Workflow id to execute on submit of the input data set"
+    InputData:
+      type: object
+      required:
+        - sections
       properties:
         id:
           type: string
-        capabilities:
-          type: array
-          items:
-            $ref: '#/components/schemas/Capability'
-    Capability:
+          description: "Unique identifier for the requirements"
+          example: "ad0cf931-43a7-4b5b-8b4f-fac450c67646"
+          readOnly: true
+        tags:
+          type: string
+          description: "Tag for the input data"
+          example: "partner-general-information"
+        input_data_set_id:
+          type: string
+          description: "Unique identifier for the input data set this input data belongs to"
+        sections:
+          $ref: '#/components/schemas/Sections'
+    Sections:
+      type: array
+      items:
+        $ref: '#/components/schemas/Section'
+    Section:
+      type: object
+      required:
+        - display_name
+        - order
+        - fields
+      properties:
+        id:
+          type: string
+          description: "Unique identifier for the requirements"
+          example: "373a4862-c029-4d53-8412-2dcfae432416"
+          readOnly: true
+        display_name: 
+          type: string
+          description: "Name of the section"
+          example: "Partner Information"
+        order:
+          type: integer
+          description: "Priority order of the section. 1 index based. Duplicates are randomly ordered."
+          example: 1
+        fields:
+          $ref: '#/components/schemas/SectionField'
+        sub_sections:
+          $ref: '#/components/schemas/Sections'
+    SectionField:
       type: object
       properties:
-        id: 
+        field_id:
           type: string
-        isSelected:
+          description: "Unique identifiers for the fields"
+        order:
+          type: integer
+          description: "Order in which the field should be shown"
+        is_required:
           type: boolean
-          description: "Has the capability already been selected"
-        selectionStatus:
+          description: "Is this a required field"
+        display_type:
           type: string
-          enum: ["IN_PROGRESS", "COMPLETED"]
-        configurations:
+          description: "Describes what the field display type should be"
+          enum: ["password", "date", "textarea", "textbox", "options", "multiselect", "hidden"]
+        options:
+          type: array
+          description: "If type is 'options' or 'multiselect' then this is used for enumerating what options the values can be."
+          items:
+            type: object
+            properties:
+              display_value:
+                type: string
+                description: "Display value of the option"
+                example: "Supply Provider"
+              value:
+                type: string
+                description: "Value of the option"
+                example: "supply_provider"
+        field: 
+          readOnly: true
+          allOf:
+            - $ref: '#/components/schemas/Field'
+    Fields:
+      type: array
+      items:
+        $ref: '#/components/schemas/Field'
+    Field:
+      type: object
+      required:
+        - display_name
+        - param_name
+        - value_type
+      properties:
+        id:
           type: string
-          description: "TODO: set of configurations configured for the capability."
+          description: "Uuid of the field"
+          example: "eacaf909-58c5-445f-94a8-c6b6d5ecfdd0"
+          readOnly: true
+        value_type:
+          type: string
+          description: "field types. Text is just a string box. Options is to indicate one option out of a list. Multiselect is to indicate potentially multiple values."
+          enum: ["string", "number", "boolean"]
+        param_name:
+          type: string
+          description: "Parameter name of the field. Must follow snake casing, be URL safe and unique."
+          example: "email_address"
+        display_name:
+          type: string
+          description: "Display name of the field, aka label"
+          example: "Email Address"
+    FieldValues:
+      type: array
+      items: 
+        $ref: '#/components/schemas/FieldValue'
+    FieldValue:
+      type: object
+      required:
+        - field_id
+        - field_value
+      properties:
+        field_id:
+          type: string
+          description: "Unique identifier of the field for the value we have."
+        field_value:
+          type: string
+          description: "All field values will be string. Parameter Field Value"
+    SavedInputData:
+      type: object
+      properties:
+        input_data_id: 
+          type: string
+        field:
+          $ref: '#/components/schemas/Field'
+        field_value:
+          type: string
+          description: "All field values will be string. Parameter Field Value"
   securitySchemes:
-    partnerCapabilitySelectionAuth:
+    partnerSignupAuth:
       type: oauth2
       flows:
         clientCredentials:
           tokenUrl: /oauth/token?grant_type=client_credentials
           scopes:
-            partner-capability-selection.register-domain.create: Register a domain for capability selection
-            partner-capability-selection.register-capabilities.create: Register a set of capabilities
-            partner-capability-selection.retrieve-product-catalog.get: Retrieve the product catalog
+            partner-signup.input-data.create: Create requirements for partner signup
+            partner-signup.input-data.get: Get requirements for partner signup
+            partner-signup.input-data.save: Save the partner signup requirements
+            partner-signup.input-data-section.create: Create the input data sections
+            partner-signup.input-data-section-fields.create: Create the input data section fields
+            partner-signup.input-data-section-field.update: Update input data section field
+            partner-signup.input-data-section-field.delete: Delete input data section field
+            partner-signup.input-data-section.delete: Delete a section from input data
+            partner-signup.input-data-sections.delete: Delete all sections from input data
+            partner-signup.input-data-section.update: Update a section from input data
+            partner-signup.field.get: Get a field
+            partner-signup.fields.get: Search for field
+            partner-signup.fields.create: Create field
+            partner-signup.field.update: Update field
+            partner-signup.input-data.update: Update input data
+            partner-signup.saved-input-data.get: Get saved input data
+            partner-signup.input-data-set.create: Create a set of input data
+            partner-signup.input-data-set.get: Get input data set by id
+            partner-signup.input-data-set.update: Update input data set by id
+            partner-signup.input-data-sets.get: Get input data sets
+            
+            

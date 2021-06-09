@@ -20,11 +20,8 @@ import org.springframework.stereotype.Component;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
-import com.github.michaelbull.result.Result;
-import com.openapi.app.pact.BigDecimalManufacturer;
-import com.openapi.app.pact.BigIntegerManufacturer;
-import com.openapi.app.pact.EnumStringManufacturer;
 import com.openapi.app.pact.exception.PactGenerationException;
+import com.openapi.app.pact.exception.PropertiesNotFountException;
 import com.openapi.app.pact.model.ErrorResources;
 import com.openapi.app.pact.model.Interaction;
 import com.openapi.app.pact.model.InteractionRequest;
@@ -34,17 +31,20 @@ import com.openapi.app.pact.model.Pact;
 import com.openapi.app.pact.model.PactSpecification;
 import com.openapi.app.pact.model.Param;
 import com.openapi.app.pact.model.Services;
+import com.openapi.app.pact.podam.BigDecimalManufacturer;
+import com.openapi.app.pact.podam.BigIntegerManufacturer;
+import com.openapi.app.pact.podam.EnumStringManufacturer;
 
-import au.com.dius.pact.consumer.ConsumerPactBuilder;
-import au.com.dius.pact.core.model.PactSpecVersion;
-import au.com.dius.pact.core.model.RequestResponsePact;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.Operation;
 import io.swagger.v3.oas.models.PathItem;
 import io.swagger.v3.oas.models.Paths;
 import io.swagger.v3.oas.models.headers.Header;
 import io.swagger.v3.oas.models.media.ArraySchema;
+import io.swagger.v3.oas.models.media.ComposedSchema;
+import io.swagger.v3.oas.models.media.MapSchema;
 import io.swagger.v3.oas.models.media.MediaType;
+import io.swagger.v3.oas.models.media.ObjectSchema;
 import io.swagger.v3.oas.models.media.Schema;
 import io.swagger.v3.oas.models.parameters.Parameter;
 import io.swagger.v3.oas.models.parameters.RequestBody;
@@ -144,7 +144,7 @@ public class PactFactory {
 	private InteractionResponse prepareHappyInteractionResponse(ObjectMapper objectMapper, Entry<String, ApiResponse> apiResponseEntry) {
 		InteractionResponse interactionResponse=null;
 		//HttpStatus.valueOf(Integer.parseInt(apiResponseEntry.getKey())).is2xxSuccessful()
-		if (HttpStatus.valueOf(Integer.parseInt(apiResponseEntry.getKey())).is2xxSuccessful()) {
+		if (!"default".equalsIgnoreCase(apiResponseEntry.getKey()) && HttpStatus.valueOf(Integer.parseInt(apiResponseEntry.getKey())).is2xxSuccessful()) {
 			interactionResponse = InteractionResponse.builder().status(apiResponseEntry.getKey())
 				.headers(responseHeaderParamGenerator(apiResponseEntry.getValue().getHeaders()))
 				.body(responseBodyGenerator(apiResponseEntry, objectMapper)).build();
@@ -186,7 +186,8 @@ public class PactFactory {
 		for (Parameter parameter : parameterList) {
 			if ("header".equalsIgnoreCase(parameter.getIn())) {
 				param = Param.builder().name(parameter.getName()).type(parameter.getSchema().getType())
-						.defaultValue(manufacturePojo(getClassType(parameter.getSchema().getType()))).build();
+						.childNode(manufacturePojo(getClassType(parameter.getSchema().getType())))
+						.ref(parameter.getSchema().get$ref()).build();
 				headerList.add(param);
 			}
 		}
@@ -202,7 +203,8 @@ public class PactFactory {
 		while(headerEntry.hasNext()) {
 			Entry<String, Header>  entry = headerEntry.next();
 			param = Param.builder().name(entry.getKey()).type(entry.getValue().getSchema().getType())
-					.defaultValue(manufacturePojo(getClassType(entry.getValue().getSchema().getType()))).build();
+					.childNode(manufacturePojo(getClassType(entry.getValue().getSchema().getType())))
+					.ref(entry.getValue().getSchema().get$ref()).build();
 			headerList.add(param);
 		}
 		return mapHeaders(headerList);
@@ -233,11 +235,17 @@ public class PactFactory {
 			}
 			Iterator<Entry<String, MediaType>> contentEntryIterator = requestBody.getContent().entrySet().iterator();
 			while (contentEntryIterator.hasNext()) {
-				Iterator<Map.Entry<String, Schema>> itr = contentEntryIterator.next().getValue().getSchema()
-						.getProperties().entrySet().iterator();
-				while (itr.hasNext()) {	
-					resultList = extractedParamList(resultList, itr);
+				Entry<String, MediaType> mapMediaType = contentEntryIterator.next();
+				Schema schema = mapMediaType.getValue().getSchema();
+				if (Objects.isNull(schema.getProperties())) {
+					// TODO
+					log.error(":::: No properties Found in schema {}  ::: " + schema.getName());
+				} else {
+					Iterator<Map.Entry<String, Schema>> itr = schema.getProperties().entrySet().iterator();
+					while (itr.hasNext()) {
+						resultList = extractedParamList(resultList, itr);
 					}
+				}
 			}
 			String jsonString = objectMapper.writeValueAsString(parseParametersToBody(resultList));
 		//	log.info("::::::::Request Body String :::"+jsonString);	
@@ -269,7 +277,7 @@ public class PactFactory {
 					while (itr.hasNext()) {
 						resultList = extractedParamList(resultList, itr);
 					}
-				} else {
+				}else if(schema instanceof ArraySchema) {
 					ArraySchema arrayModel = (ArraySchema) schema;
 					Schema<?> schema1 = arrayModel.getItems();
 					if (schema1.getProperties() != null) {
@@ -277,7 +285,14 @@ public class PactFactory {
 						while (arrayProp.hasNext()) {
 							resultList = extractedParamList(resultList, arrayProp);
 						}
+					}else {
+						throw new PropertiesNotFountException();
 					}
+				}else if(schema instanceof MapSchema) {
+					//TODO
+					log.error(":::: No Rules for MapSchema  ::: ");
+					Schema additionalProperty = (Schema) schema.getAdditionalProperties();
+				
 				}
 				if (HttpStatus.valueOf(Integer.parseInt(apiResponseEntry.getKey())).is2xxSuccessful()) {//2xx
 					map = parseParametersToBody(resultList);
@@ -300,7 +315,7 @@ public class PactFactory {
 		return objectMapper.nullNode();
 	}
 
-	private static List<Param> extractedElementFromArraySchema(Entry<String, Schema> entry) {
+	private static List<Param> extractedElementFromArraySchema(Entry<String, Schema> entry) throws PropertiesNotFountException {
 		Param param = null;
 		List<Param> resultList = new ArrayList<>();
 		ArraySchema arrayModel = (ArraySchema) entry.getValue();
@@ -311,32 +326,24 @@ public class PactFactory {
 				resultList = extractedParamList(resultList, itr);
 			}
 		} else {
-			param = Param.builder().name(entry.getKey()).type(arrayModel.getType()).defaultValue(schema.getExample())
-					.build();
-			resultList.add(param);
+			throw new PropertiesNotFountException();
 		}
 		return resultList;
 	}
 	
-	private static List<Param> extractedParamList(List<Param> resultList, Iterator<Map.Entry<String, Schema>> entry) {
-		Param param=null;
-		Entry<String, Schema> entry1 = entry.next();
-		if ("array".equalsIgnoreCase(entry1.getValue().getType())) {
-			param = Param.builder().name(entry1.getKey()).type(entry1.getValue().getType())
-					.defaultValue(extractedElementFromArraySchema(entry1)).build();
-			resultList.add(param);
-		} else if ("object".equalsIgnoreCase(entry1.getValue().getType())) {
-			param = Param.builder().name(entry1.getKey()).type(entry1.getValue().getType())
-					.defaultValue(extractedElementFromObjectSchema(entry1)).build();
-			resultList.add(param);
-		} else {
-			param = Param.builder().name(entry1.getKey()).type(entry1.getValue().getType())
-					.defaultValue(entry1.getValue().getExample()).build();
-			resultList.add(param);
-		}
+
+
+	private static List<Param> extractedElementFromComposedSchema(Entry<String, Schema> entry1) {
+		List<Param> resultList = new LinkedList<>();
+		ComposedSchema composedModel = (ComposedSchema) entry1.getValue();
+		List<Schema> schema = composedModel.getAllOf();
+		Schema<?> schema1 = schema.get(0);
+			Iterator<Map.Entry<String, Schema>> itr = schema1.getProperties().entrySet().iterator();
+			while (itr.hasNext()) {
+				resultList = extractedParamList(resultList, itr);
+			}
 		return resultList;
 	}
-
 
 	@SuppressWarnings("unchecked")
 	private static List<Param> extractedElementFromObjectSchema(Entry<String, Schema> entry) {
@@ -344,6 +351,39 @@ public class PactFactory {
 		Iterator<Map.Entry<String, Schema>> itr = entry.getValue().getProperties().entrySet().iterator();
 		while (itr.hasNext()) {
 			resultList = extractedParamList(resultList, itr);
+		}
+		return resultList;
+	}
+	
+	private static List<Param> extractedParamList(List<Param> resultList, Iterator<Map.Entry<String, Schema>> entry) {
+		Param param = null;
+		Entry<String, Schema> entry1 = entry.next();
+		if (entry1.getValue() instanceof ArraySchema) {
+			// log.info("::::::::::::::::in ArraySchema::::::::::::::");
+			try {
+				param = Param.builder().name(entry1.getKey()).type(entry1.getValue().getType())
+						.childNode(extractedElementFromArraySchema(entry1)).ref(entry1.getValue().get$ref()).build();
+			} catch (PropertiesNotFountException pnfe) {
+				 log.info("::::::No properties in ArraySchema:::::::"+entry1.getKey());
+				param = Param.builder().name(entry1.getKey()).type(entry1.getValue().getType())
+						.childNode(entry1.getValue().getExample()).ref(entry1.getValue().get$ref()).build();
+			}
+			resultList.add(param);
+		} else if (entry1.getValue() instanceof ObjectSchema) {
+			// log.info("::::::::::::::::in ObjectSchema::::::::::::::");
+			param = Param.builder().name(entry1.getKey()).type(entry1.getValue().getType())
+					.childNode(extractedElementFromObjectSchema(entry1)).ref(entry1.getValue().get$ref()).build();
+			resultList.add(param);
+		} else if (entry1.getValue() instanceof ComposedSchema) {
+			// log.info("::::::::::::::::in ComposedSchema::::::::::::::");
+			param = Param.builder().name(entry1.getKey()).type(entry1.getValue().getType())
+					.childNode(extractedElementFromComposedSchema(entry1)).ref(entry1.getValue().get$ref()).build();
+			resultList.add(param);
+
+		} else {
+			param = Param.builder().name(entry1.getKey()).type(entry1.getValue().getType())
+					.childNode(entry1.getValue().getExample()).ref(entry1.getValue().get$ref()).build();
+			resultList.add(param);
 		}
 		return resultList;
 	}
@@ -394,19 +434,27 @@ public class PactFactory {
 	}
 
 	private static Object getParamValue(Param param) {
-		if (param.getDefaultValue() != null) {
-			return param.getDefaultValue();
+		if (param.getChildNode() != null) {
+			return param.getChildNode();
 		}
 		return manufacturePojo(getClassType(param.getType()));
 	}
 
 	@SuppressWarnings("unchecked")
 	private static Object getParamValueFromArray(Param param) {
-		Map<String, Object> objMap = parseParametersToBody((List<Param>) param.getDefaultValue());
+		if(param.getChildNode() instanceof String) {
+			return param.getChildNode();
+		}
+		Map<String, Object> objMap = parseParametersToBody((List<Param>) param.getChildNode());
 		List<Object> object = new ArrayList<>();
 		object.add(objMap);
 		// log.info("::::::getParamValue:::::jsonArray:::" + objMap);
 		return object;
+	}
+	@SuppressWarnings("unchecked")
+	private static Object getParamValueFromObject(Param param) {
+		Map<String, Object> objMap = parseParametersToBody((List<Param>) param.getChildNode());
+		return objMap;
 	}
 	
 	private static Object manufacturePojo(Class<?> type) {
@@ -421,12 +469,26 @@ public class PactFactory {
 		Map<String, Object> mapParam = new LinkedHashMap<>();
 		if(Objects.nonNull(requestParameters)) {
 			requestParameters.forEach(param -> {
-				if (param.getType() == "array" || param.getType() == "object") {
-					mapParam.put(param.getName(), getParamValueFromArray(param));
+				if (param.getType() == null && param.getRef() != null) {
+					// log.warn("::::::::::::::param.getRef():::::::::::::::" + param.getRef());
+					mapParam.put(param.getName(), getParamValue(param));
+				} else if (param.getType() == "object" || param.getType() == null) {
+					// log.warn("::::::::::::::object Body:::::::::::::::" + param.getType());
+					mapParam.put(param.getName(), getParamValueFromObject(param));
+				} else if (param.getType() == "array") {
+					// log.warn("::::::::::::::array and null Body:::::::::::::::" +
+					// param.getType());
+					if (param.getChildNode() != null) {
+						mapParam.put(param.getName(), getParamValueFromArray(param));
+					} else {
+						mapParam.put(param.getName(), getParamValue(param));
+					}
 				} else {
+					// log.warn("::::::::::::::default:::::::::::::::" + param.getType());
 					mapParam.put(param.getName(), getParamValue(param));
 				}
-			//	log.info("::::::parseParametersToBody:::::Key:::" + param.getName() + "::::Value:::::"+ mapParam.get(param.getName()));
+				// log.info("::::::parseParametersToBody:::::Key:::" + param.getName()
+				// +"::::Value:::::"+ mapParam.get(param.getName()));
 			});
 		}
 		return mapParam;
@@ -466,23 +528,5 @@ public class PactFactory {
 		}
 	}
 
-	public void testPact2() {
-		Map<String, String> headers = new HashMap<String, String>();
-		headers.put("Content-Type", "application/json;charset=UTF-8");
-
-		RequestResponsePact pact = ConsumerPactBuilder.consumer("JunitDSLConsumer2").hasPactWith("ExampleProvider")
-				.given("").uponReceiving("Query name is Nanoha").path("/information").query("name=Nanoha").method("GET")
-				.willRespondWith().headers(headers).status(200)
-				.body("{\n" + "    \"salary\": 80000,\n" + "    \"name\": \"Takamachi Nanoha\",\n"
-						+ "    \"nationality\": \"Japan\",\n" + "    \"contact\": {\n"
-						+ "        \"Email\": \"takamachi.nanoha@ariman.com\",\n"
-						+ "        \"Phone Number\": \"9090940\"\n" + "    }\n" + "}")
-				.toPact();
-		// .sortInteractions();
-
-		System.out.println(":::::::pact::::::::" + pact.toString());
-		Result<Integer, Throwable> result = pact.write("pacts/", PactSpecVersion.V3);
-		System.out.println(":::::::result::::::::" + result.toString());
-	}
 
 }

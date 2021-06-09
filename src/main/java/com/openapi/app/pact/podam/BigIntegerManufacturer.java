@@ -1,4 +1,4 @@
-package com.openapi.app.pact;
+package com.openapi.app.pact.podam;
 
 import java.lang.reflect.Type;
 import java.math.BigInteger;
