@@ -13,6 +13,7 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
@@ -34,7 +35,14 @@ import com.expediagroup.pact.podam.EnumStringManufacturer;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 
+import au.com.dius.pact.consumer.ConsumerPactBuilder;
+import au.com.dius.pact.consumer.dsl.DslPart;
+import au.com.dius.pact.consumer.dsl.PactDslJsonBody;
+import au.com.dius.pact.consumer.dsl.PactDslWithProvider;
+import au.com.dius.pact.core.model.PactSpecVersion;
+import au.com.dius.pact.core.model.RequestResponsePact;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.Operation;
 import io.swagger.v3.oas.models.PathItem;
@@ -141,6 +149,55 @@ public class PactFactory {
 				.body(requestBodyGenerator(entry.getValue(), objectMapper)).build();
 	}
 
+	public static void testWithPactDSLJsonBody(JSONObject body) {
+	        Map<String, String> headers = new HashMap<String, String>();
+	        headers.put("Content-Type", "application/json;charset=UTF-8");
+	     //   PactDslWithProvider builder = new PactDslWithProvider(new ConsumerPactBuilder("consumer"), "provider");
+	        
+	        DslPart body1 = new PactDslJsonBody()
+	                .numberType("salary", 45000)
+	                .stringType("name", "Hatsune Miku")
+	                .stringType("nationality", "Japan")
+	                .object("contact")
+	                .stringValue("Email", "hatsune.miku@ariman.com")
+	                .stringValue("Phone Number", "9090950")
+	                .closeObject();
+
+	        RequestResponsePact pact1 = ConsumerPactBuilder
+	                .consumer("JunitDSLJsonBodyConsumerMatching")
+	                .hasPactWith("ExampleProvider")
+	                .given("")
+	                .uponReceiving("Query name is Miku")
+	                .path("/information")
+	                .query("name=Miku")
+	                .method("GET")
+	                .willRespondWith()
+	                .headers(headers)
+	                .status(200)
+	                .body(body1)
+	                .toPact();
+	      
+	        System.out.println(":::::::pact1::::::::" + pact1.toString());
+			pact1.write("pacts/", PactSpecVersion.V3);
+
+	        RequestResponsePact pact = ConsumerPactBuilder
+	                .consumer("JunitDSLJsonBodyConsumer")
+	                .hasPactWith("ExampleProvider")
+	                .given("")
+	                .uponReceiving("Query name is Miku")
+	                .path("/information")
+	                .query("name=Miku")
+	                .method("GET")
+	                .willRespondWith()
+	                .headers(headers)
+	                .status(200)
+	                .body(body)
+	                .toPact();
+	        
+	        System.out.println(":::::::pact::::::::" + pact.toString());
+			pact.write("pacts/", PactSpecVersion.V3);
+	    }
+	 
 	private InteractionResponse prepareHappyInteractionResponse(ObjectMapper objectMapper, Entry<String, ApiResponse> apiResponseEntry) {
 		InteractionResponse interactionResponse=null;
 		//HttpStatus.valueOf(Integer.parseInt(apiResponseEntry.getKey())).is2xxSuccessful()
@@ -297,6 +354,7 @@ public class PactFactory {
 				if (HttpStatus.valueOf(Integer.parseInt(apiResponseEntry.getKey())).is2xxSuccessful()) {//2xx
 					map = parseParametersToBody(resultList);
 					jsonString = objectMapper.writeValueAsString(map);
+					//testWithPactDSLJsonBody(new JSONObject(jsonString));
 				} else if (HttpStatus.valueOf(Integer.parseInt(apiResponseEntry.getKey())).isError()) {//only 4xx and 5xx
 					errors = errors.getCompleteDescription(Integer.parseInt(apiResponseEntry.getKey()));
 					jsonString = objectMapper.writeValueAsString(errors);
@@ -445,6 +503,10 @@ public class PactFactory {
 		if(param.getChildNode() instanceof String) {
 			return param.getChildNode();
 		}
+		if(param.getChildNode() instanceof ArrayNode) {
+			return param.getChildNode();
+		}
+		
 		Map<String, Object> objMap = parseParametersToBody((List<Param>) param.getChildNode());
 		List<Object> object = new ArrayList<>();
 		object.add(objMap);

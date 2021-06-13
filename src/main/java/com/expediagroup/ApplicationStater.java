@@ -4,10 +4,10 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-public class OpenapiSwaggerParserApplication {
+public class ApplicationStater {
 
 	public static void main(String[] args) {
-		SpringApplication.run(OpenapiSwaggerParserApplication.class, args);
+		SpringApplication.run(ApplicationStater.class, args);
 	}
 
 }
