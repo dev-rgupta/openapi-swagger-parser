@@ -14,8 +14,8 @@ before running below command kindly configure pact broker configurations in appl
 
 ######## Pact Broker Credentials ########
 pactbroker.host=https://dev-rgupta.pactflow.io/
-pactbroker.auth.username=gupta.ratnesh9@gmail.com
-pactbroker.auth.password=Compaq@2190
+pactbroker.auth.username=************
+pactbroker.auth.password=************
 pact.verifier.publishResults=true
 
 # by the help of both commands we can generates pacts
@@ -48,7 +48,7 @@ Step 1:
 				<version>4.1.11</version>
 				<configuration>
 					<pactBrokerUrl>https://dev-rgupta.pactflow.io/</pactBrokerUrl>
-					<pactBrokerToken>QoXeUwD8k5OENElS5EuDiA</pactBrokerToken> <!-- Replace TOKEN with the actual token -->
+					<pactBrokerToken>QoX****************</pactBrokerToken> <!-- Replace TOKEN with the actual token -->
 					<pactBrokerAuthenticationScheme>Bearer</pactBrokerAuthenticationScheme>
 					<serviceProviders>
 						<serviceProvider>
